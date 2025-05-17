@@ -8,6 +8,7 @@ class ThemeModel {
   final Color secondaryColor;
   final String backgroundImage;
   final String themeCardImage;
+  final String cardBackImage;
   final Map<String, String> themeSounds;
 
   ThemeModel({
@@ -18,6 +19,7 @@ class ThemeModel {
     required this.secondaryColor,
     required this.backgroundImage,
     required this.themeCardImage,
+    required this.cardBackImage,
     this.themeSounds = const {},
   });
 
@@ -31,6 +33,7 @@ class ThemeModel {
         secondaryColor: Colors.blue,
         backgroundImage: 'assets/images/bob_esponja/background.jpg',
         themeCardImage: 'assets/images/bob_esponja/theme_card.jpg',
+        cardBackImage: 'assets/images/bob_esponja/card_back.jpg',
         themeSounds: {
           'access_theme': 'assets/images/bob_esponja/sounds/access_theme.mp3',
           'game_start': 'assets/images/bob_esponja/sounds/game_start.mp3',
@@ -48,6 +51,7 @@ class ThemeModel {
         secondaryColor: Colors.lightBlue,
         backgroundImage: 'assets/images/peppa_pig/background.jpg',
         themeCardImage: 'assets/images/peppa_pig/theme_card.jpg',
+        cardBackImage: 'assets/images/peppa_pig/card_back.jpg',
         themeSounds: {
           'access_theme': 'assets/images/peppa_pig/sounds/access_theme.mp3',
           'game_start': 'assets/images/peppa_pig/sounds/game_start.mp3',
@@ -65,6 +69,7 @@ class ThemeModel {
         secondaryColor: Colors.blue,
         backgroundImage: 'assets/images/nemo/background.jpg',
         themeCardImage: 'assets/images/nemo/theme_card.jpg',
+        cardBackImage: 'assets/images/nemo/card_back.jpg',
         themeSounds: {
           'access_theme': 'assets/images/nemo/sounds/access_theme.mp3',
           'game_start': 'assets/images/nemo/sounds/game_start.mp3',
@@ -82,6 +87,7 @@ class ThemeModel {
         secondaryColor: Colors.pink,
         backgroundImage: 'assets/images/supergatinhos/background.jpg',
         themeCardImage: 'assets/images/supergatinhos/theme_card.jpg',
+        cardBackImage: 'assets/images/supergatinhos/card_back.jpg',
         themeSounds: {
           'access_theme': 'assets/images/supergatinhos/sounds/access_theme.mp3',
           'game_start': 'assets/images/supergatinhos/sounds/game_start.mp3',
@@ -99,6 +105,7 @@ class ThemeModel {
         secondaryColor: Colors.white,
         backgroundImage: 'assets/images/astro_bot/background.jpg',
         themeCardImage: 'assets/images/astro_bot/theme_card.jpg',
+        cardBackImage: 'assets/images/astro_bot/card_back.jpg',
         themeSounds: {
           'access_theme': 'assets/images/astro_bot/sounds/access_theme.mp3',
           'game_start': 'assets/images/astro_bot/sounds/game_start.mp3',
@@ -116,6 +123,7 @@ class ThemeModel {
         secondaryColor: Colors.green,
         backgroundImage: 'assets/images/little_big_planet/background.jpg',
         themeCardImage: 'assets/images/little_big_planet/theme_card.jpg',
+        cardBackImage: 'assets/images/little_big_planet/card_back.jpg',
         themeSounds: {
           'access_theme': 'assets/images/little_big_planet/sounds/access_theme.mp3',
           'game_start': 'assets/images/little_big_planet/sounds/game_start.mp3',

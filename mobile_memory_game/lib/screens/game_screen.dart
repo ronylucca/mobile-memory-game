@@ -211,97 +211,32 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildGameBoard(GameProvider gameProvider) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calcula o número de colunas baseado na orientação e tamanho da tela
-        final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
-        final crossAxisCount = isPortrait ? 4 : 5; // 4 colunas no modo retrato, 5 no modo paisagem
-        
-        // Calcula o tamanho das cartas baseado no espaço disponível
-        final availableWidth = constraints.maxWidth;
-        final availableHeight = constraints.maxHeight;
-        
-        // Calcula o tamanho ideal das cartas
-        final cardWidth = (availableWidth - (crossAxisCount + 1) * 8) / crossAxisCount;
-        final cardHeight = cardWidth * 1.4; // Proporção 1:1.4 para as cartas
-        
-        return GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: 1 / 1.4,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: gameProvider.game.cards.length,
-          itemBuilder: (context, index) {
-            final card = gameProvider.game.cards[index];
-            return FlipCard(
-              key: ValueKey(card.id),
-              flipOnTouch: !card.isMatched && !card.isFlipped && !gameProvider.isProcessing,
-              front: _buildCardFace(
-                card,
-                gameProvider,
-                cardWidth,
-                cardHeight,
-                isBack: true,
-              ),
-              back: _buildCardFace(
-                card,
-                gameProvider,
-                cardWidth,
-                cardHeight,
-                isBack: false,
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildCardFace(
-    CardModel card,
-    GameProvider gameProvider,
-    double width,
-    double height, {
-    required bool isBack,
-  }) {
+    final game = gameProvider.game;
+    final cardSize = GameUtils.calculateCardSize(context);
+    
     return Container(
-      width: width,
-      height: height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Imagem de fundo
-            Image.asset(
-              isBack ? widget.theme.cardBackImage : card.imagePath,
-              fit: BoxFit.cover,
-            ),
-            // Overlay para cartas viradas
-            if (!isBack && card.isFlipped)
-              Container(
-                color: Colors.black.withOpacity(0.3),
-              ),
-            // Overlay para cartas combinadas
-            if (card.isMatched)
-              Container(
-                color: Colors.green.withOpacity(0.3),
-              ),
-          ],
+      padding: const EdgeInsets.all(8.0),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 5,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
         ),
+        itemCount: game.cards.length,
+        itemBuilder: (context, index) {
+          final card = game.cards[index];
+          return MemoryCard(
+            card: card,
+            theme: widget.theme,
+            onCardTap: (index) => gameProvider.selectCard(index),
+            index: index,
+          );
+        },
       ),
     );
   }

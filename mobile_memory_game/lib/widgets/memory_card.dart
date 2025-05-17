@@ -82,7 +82,7 @@ class _MemoryCardState extends State<MemoryCard> {
   Widget _buildCardFront() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -95,16 +95,23 @@ class _MemoryCardState extends State<MemoryCard> {
           color: widget.card.isMatched 
               ? Colors.green.shade300 
               : widget.theme.primaryColor,
-          width: widget.card.isMatched ? 3.0 : 1.5,
+          width: widget.card.isMatched ? 2.0 : 0.5,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(12.0),
         child: Center(
-          child: Icon(
-            Icons.question_mark,
-            size: 40,
-            color: widget.theme.primaryColor,
+          child: Image.asset(
+            widget.theme.cardBackImage,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback para o símbolo "?" se a imagem não for encontrada
+              return Icon(
+                Icons.question_mark,
+                size: 40,
+                color: widget.theme.primaryColor,
+              );
+            },
           ),
         ),
       ),
@@ -112,9 +119,10 @@ class _MemoryCardState extends State<MemoryCard> {
   }
 
   Widget _buildCardBack(bool useIcons) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -127,14 +135,14 @@ class _MemoryCardState extends State<MemoryCard> {
           color: widget.card.isMatched 
               ? Colors.green.shade300 
               : widget.theme.secondaryColor,
-          width: widget.card.isMatched ? 3.0 : 1.5,
+          width: widget.card.isMatched ? 2.0 : 0.5,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(12.0),
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(2.0),
             child: useIcons 
                 ? _getIconForPairId(widget.card.pairId)  // Usa ícones se as imagens não estiverem disponíveis
                 : Image.asset(
