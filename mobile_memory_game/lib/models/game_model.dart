@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/card_model.dart';
 import 'package:mobile_memory_game/models/player_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
@@ -13,6 +14,11 @@ class GameModel {
   final int currentPlayerIndex;
   final int totalMoves;
   final int selectedCardIndex;
+  final int comboCount;
+  final int maxCombo;
+  final DateTime? lastMatchTime;
+  final Color player1Color;
+  final Color player2Color;
 
   GameModel({
     required this.id,
@@ -23,6 +29,11 @@ class GameModel {
     this.currentPlayerIndex = 0,
     this.totalMoves = 0,
     this.selectedCardIndex = -1,
+    this.comboCount = 0,
+    this.maxCombo = 0,
+    this.lastMatchTime,
+    required this.player1Color,
+    required this.player2Color,
   });
 
   GameModel copyWith({
@@ -34,6 +45,11 @@ class GameModel {
     int? currentPlayerIndex,
     int? totalMoves,
     int? selectedCardIndex,
+    int? comboCount,
+    int? maxCombo,
+    DateTime? lastMatchTime,
+    Color? player1Color,
+    Color? player2Color,
   }) {
     return GameModel(
       id: id ?? this.id,
@@ -44,6 +60,11 @@ class GameModel {
       currentPlayerIndex: currentPlayerIndex ?? this.currentPlayerIndex,
       totalMoves: totalMoves ?? this.totalMoves,
       selectedCardIndex: selectedCardIndex ?? this.selectedCardIndex,
+      comboCount: comboCount ?? this.comboCount,
+      maxCombo: maxCombo ?? this.maxCombo,
+      lastMatchTime: lastMatchTime ?? this.lastMatchTime,
+      player1Color: player1Color ?? this.player1Color,
+      player2Color: player2Color ?? this.player2Color,
     );
   }
 

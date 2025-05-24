@@ -149,6 +149,8 @@ class _GameScreenState extends State<GameScreen> {
                                 theme: widget.theme,
                                 currentPlayerIndex: game.currentPlayerIndex,
                                 isCompact: !isLargeScreen,
+                                comboCount: game.comboCount,
+                                maxCombo: game.maxCombo,
                               ),
                               SizedBox(height: isLargeScreen ? 20 : 12),
                               Expanded(

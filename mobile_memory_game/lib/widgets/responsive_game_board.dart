@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/card_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
-import 'package:mobile_memory_game/widgets/memory_card.dart';
+import 'package:mobile_memory_game/widgets/enhanced_memory_card.dart';
 import 'package:mobile_memory_game/providers/game_provider.dart';
 
 class ResponsiveGameBoard extends StatelessWidget {
@@ -93,7 +93,7 @@ class ResponsiveGameBoard extends StatelessWidget {
                     ),
                     itemCount: cards.length,
                     itemBuilder: (context, index) {
-                      return MemoryCard(
+                      return EnhancedMemoryCard(
                         card: cards[index],
                         theme: theme,
                         onCardTap: onCardTap,

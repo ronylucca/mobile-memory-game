@@ -56,6 +56,9 @@ class GameProvider extends ChangeNotifier {
     
     final cards = _createAndShuffleCards(theme);
 
+    // Gera cores distintas para cada jogador baseadas no tema
+    final playerColors = _generatePlayerColors(theme);
+
     _game = GameModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       cards: cards,
@@ -63,6 +66,8 @@ class GameProvider extends ChangeNotifier {
       theme: theme,
       status: GameStatus.inProgress,
       currentPlayerIndex: starterIndex,
+      player1Color: playerColors[0],
+      player2Color: playerColors[1],
     );
     
     // Define o tema atual no AudioManager
@@ -78,6 +83,28 @@ class GameProvider extends ChangeNotifier {
     _audioManager.playThemeSound('game_start');
     
     notifyListeners();
+  }
+  
+  // Gera cores distintas para cada jogador baseadas no tema
+  List<Color> _generatePlayerColors(ThemeModel theme) {
+    final primaryHSL = HSLColor.fromColor(theme.primaryColor);
+    final secondaryHSL = HSLColor.fromColor(theme.secondaryColor);
+    
+    // Player 1: Versão mais saturada do primaryColor
+    final player1Color = primaryHSL.withSaturation(
+      (primaryHSL.saturation + 0.2).clamp(0.0, 1.0)
+    ).withLightness(
+      (primaryHSL.lightness - 0.1).clamp(0.0, 1.0)
+    ).toColor();
+    
+    // Player 2: Versão mais saturada do secondaryColor  
+    final player2Color = secondaryHSL.withSaturation(
+      (secondaryHSL.saturation + 0.2).clamp(0.0, 1.0)
+    ).withLightness(
+      (secondaryHSL.lightness - 0.1).clamp(0.0, 1.0)
+    ).toColor();
+    
+    return [player1Color, player2Color];
   }
   
   // Verifica se as imagens do tema estão disponíveis
@@ -179,23 +206,51 @@ class GameProvider extends ChangeNotifier {
 
     if (isMatch) {
       // As cartas formam um par, mantém viradas e marca como encontradas
-      updatedCards[firstIndex] = _firstSelectedCard!.copyWith(isMatched: true, isFlipped: true);
-      updatedCards[secondIndex] = _secondSelectedCard!.copyWith(isMatched: true, isFlipped: true);
+      // Adiciona a informação de qual jogador fez o match
+      updatedCards[firstIndex] = _firstSelectedCard!.copyWith(
+        isMatched: true, 
+        isFlipped: true, 
+        matchedByPlayer: _game!.currentPlayerIndex
+      );
+      updatedCards[secondIndex] = _secondSelectedCard!.copyWith(
+        isMatched: true, 
+        isFlipped: true, 
+        matchedByPlayer: _game!.currentPlayerIndex
+      );
+      
+      // Sistema de Combo (não muda de jogador no acerto)
+      final now = DateTime.now();
+      final currentCombo = _game!.comboCount + 1;
+      final newMaxCombo = currentCombo > _game!.maxCombo ? currentCombo : _game!.maxCombo;
+      
+      // Calcula bonus por combo (cada acerto consecutivo vale mais)
+      final comboBonus = currentCombo > 1 ? (currentCombo - 1) * 0.5 : 0;
+      final totalScore = 1 + comboBonus;
+      
+      debugPrint('COMBO: $currentCombo, Bonus: $comboBonus, Total Score: ${totalScore.round()}');
       
       // Toca o som de par encontrado do tema
-      _audioManager.playThemeSound('match_found');
+      if (currentCombo >= 3) {
+        // Som especial para combo alto
+        _audioManager.playThemeSound('match_found');
+      } else {
+        _audioManager.playThemeSound('match_found');
+      }
       
       // Atualiza o score do jogador atual
       final players = List<PlayerModel>.from(_game!.players);
       final currentPlayer = players[_game!.currentPlayerIndex];
       players[_game!.currentPlayerIndex] = currentPlayer.copyWith(
-        score: currentPlayer.score + 1,
+        score: currentPlayer.score + totalScore.round(),
       );
       
       _game = _game!.copyWith(
         cards: updatedCards,
         players: players,
         totalMoves: _game!.totalMoves + 1,
+        comboCount: currentCombo,
+        maxCombo: newMaxCombo,
+        lastMatchTime: now,
       );
       
       // Verifica se o jogo acabou
@@ -210,6 +265,9 @@ class GameProvider extends ChangeNotifier {
       // Toca o som de par não encontrado do tema
       _audioManager.playThemeSound('no_match');
       
+      // Reset do combo no erro
+      final currentCombo = 0;
+      
       // Troca de jogador
       final players = List<PlayerModel>.from(_game!.players);
       final newPlayerIndex = (_game!.currentPlayerIndex + 1) % 2;
@@ -222,6 +280,7 @@ class GameProvider extends ChangeNotifier {
         players: players,
         currentPlayerIndex: newPlayerIndex,
         totalMoves: _game!.totalMoves + 1,
+        comboCount: currentCombo, // Reset combo
       );
     }
     

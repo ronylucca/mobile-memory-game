@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/player_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
+import 'package:mobile_memory_game/widgets/combo_display.dart';
 
 class EnhancedScoreBoard extends StatefulWidget {
   final List<PlayerModel> players;
   final ThemeModel theme;
   final int currentPlayerIndex;
   final bool isCompact;
+  final int comboCount;
+  final int maxCombo;
 
   const EnhancedScoreBoard({
     super.key,
@@ -14,6 +17,8 @@ class EnhancedScoreBoard extends StatefulWidget {
     required this.theme,
     required this.currentPlayerIndex,
     this.isCompact = false,
+    this.comboCount = 0,
+    this.maxCombo = 0,
   });
 
   @override
@@ -112,39 +117,55 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
             vertical: verticalPadding,
             horizontal: horizontalPadding,
           ),
-          child: Row(
+          child: Column(
             children: [
-              Expanded(
-                child: _buildEnhancedPlayerScore(
-                  widget.players[0],
-                  isCurrentPlayer: widget.currentPlayerIndex == 0,
-                  isLeft: true,
-                ),
-              ),
-              Container(
-                width: 2,
-                height: 30, // Reduzido de 60 para 30
-                margin: const EdgeInsets.symmetric(horizontal: 12), // Reduzido margem
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      widget.theme.primaryColor.withOpacity(0.3),
-                      widget.theme.secondaryColor.withOpacity(0.3),
-                      Colors.transparent,
-                    ],
+              // Combo Display no topo
+              if (widget.comboCount >= 2)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ComboDisplay(
+                    comboCount: widget.comboCount,
+                    maxCombo: widget.maxCombo,
+                    theme: widget.theme,
+                    isCompact: true,
                   ),
-                  borderRadius: BorderRadius.circular(1),
                 ),
-              ),
-              Expanded(
-                child: _buildEnhancedPlayerScore(
-                  widget.players[1],
-                  isCurrentPlayer: widget.currentPlayerIndex == 1,
-                  isLeft: false,
-                ),
+              // ScoreBoard principal
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildEnhancedPlayerScore(
+                      widget.players[0],
+                      isCurrentPlayer: widget.currentPlayerIndex == 0,
+                      isLeft: true,
+                    ),
+                  ),
+                  Container(
+                    width: 2,
+                    height: 30, // Reduzido de 60 para 30
+                    margin: const EdgeInsets.symmetric(horizontal: 12), // Reduzido margem
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          widget.theme.primaryColor.withOpacity(0.3),
+                          widget.theme.secondaryColor.withOpacity(0.3),
+                          Colors.transparent,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildEnhancedPlayerScore(
+                      widget.players[1],
+                      isCurrentPlayer: widget.currentPlayerIndex == 1,
+                      isLeft: false,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

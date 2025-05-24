@@ -7,6 +7,7 @@ class CardModel {
   final int pairId;
   bool isFlipped;
   bool isMatched;
+  int? matchedByPlayer; // ID do jogador que fez o match (0 ou 1)
 
   CardModel({
     required this.id,
@@ -15,6 +16,7 @@ class CardModel {
     required this.pairId,
     this.isFlipped = false,
     this.isMatched = false,
+    this.matchedByPlayer,
   });
 
   CardModel copyWith({
@@ -24,6 +26,7 @@ class CardModel {
     int? pairId,
     bool? isFlipped,
     bool? isMatched,
+    int? matchedByPlayer,
   }) {
     return CardModel(
       id: id ?? this.id,
@@ -32,6 +35,7 @@ class CardModel {
       pairId: pairId ?? this.pairId,
       isFlipped: isFlipped ?? this.isFlipped,
       isMatched: isMatched ?? this.isMatched,
+      matchedByPlayer: matchedByPlayer ?? this.matchedByPlayer,
     );
   }
 } 
