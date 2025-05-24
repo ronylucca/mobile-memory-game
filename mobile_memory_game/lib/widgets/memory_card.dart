@@ -12,6 +12,7 @@ class MemoryCard extends StatefulWidget {
   final Function(int) onCardTap;
   final int index;
   final GlobalKey<FlipCardState>? flipCardKey;
+  final Size? cardSize;
 
   const MemoryCard({
     super.key,
@@ -20,6 +21,7 @@ class MemoryCard extends StatefulWidget {
     required this.onCardTap,
     required this.index,
     this.flipCardKey,
+    this.cardSize,
   });
 
   @override
@@ -58,6 +60,24 @@ class _MemoryCardState extends State<MemoryCard> {
     // Obtém o estado global para saber se estamos usando ícones
     final useIcons = context.select<GameProvider, bool>((provider) => provider.useIcons);
     
+    Widget cardWidget = FlipCard(
+      key: _flipCardKey,
+      speed: 400,
+      direction: FlipDirection.HORIZONTAL,
+      flipOnTouch: false,
+      front: _buildCardFront(),
+      back: _buildCardBack(useIcons),
+    );
+    
+    // Se um tamanho específico foi fornecido, use-o
+    if (widget.cardSize != null) {
+      cardWidget = SizedBox(
+        width: widget.cardSize!.width,
+        height: widget.cardSize!.height,
+        child: cardWidget,
+      );
+    }
+    
     return GestureDetector(
       onTap: () {
         if (!widget.card.isFlipped && !widget.card.isMatched) {
@@ -65,17 +85,7 @@ class _MemoryCardState extends State<MemoryCard> {
           _audioManager.playThemeSound('card_flip');
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: FlipCard(
-          key: _flipCardKey,
-          speed: 400,
-          direction: FlipDirection.HORIZONTAL,
-          flipOnTouch: false,
-          front: _buildCardFront(),
-          back: _buildCardBack(useIcons),
-        ),
-      ),
+      child: cardWidget,
     );
   }
 

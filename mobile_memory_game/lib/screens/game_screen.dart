@@ -6,7 +6,11 @@ import 'package:mobile_memory_game/providers/game_provider.dart';
 import 'package:mobile_memory_game/screens/game_result_screen.dart';
 import 'package:mobile_memory_game/widgets/memory_card.dart';
 import 'package:mobile_memory_game/widgets/score_board.dart';
+import 'package:mobile_memory_game/widgets/enhanced_score_board.dart';
+import 'package:mobile_memory_game/widgets/enhanced_game_controls.dart';
+import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
 import 'package:mobile_memory_game/utils/game_utils.dart';
+import 'package:mobile_memory_game/utils/responsive_layout.dart';
 
 class GameScreen extends StatefulWidget {
   final String player1Name;
@@ -132,22 +136,38 @@ class _GameScreenState extends State<GameScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          _buildHeader(gameProvider),
-                          const SizedBox(height: 20),
-                          ScoreBoard(
-                            players: game.players,
-                            theme: widget.theme,
-                            currentPlayerIndex: game.currentPlayerIndex,
-                          ),
-                          const SizedBox(height: 20),
-                          Expanded(
-                            child: _buildGameBoard(gameProvider),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildGameControls(gameProvider),
-                        ],
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isLargeScreen = ResponsiveLayout.isLargeScreen(context);
+                          
+                          return Column(
+                            children: [
+                              _buildHeader(gameProvider, isCompact: !isLargeScreen),
+                              SizedBox(height: isLargeScreen ? 20 : 12),
+                              EnhancedScoreBoard(
+                                players: game.players,
+                                theme: widget.theme,
+                                currentPlayerIndex: game.currentPlayerIndex,
+                                isCompact: !isLargeScreen,
+                              ),
+                              SizedBox(height: isLargeScreen ? 20 : 12),
+                              Expanded(
+                                child: ResponsiveGameBoard(
+                                  cards: game.cards,
+                                  theme: widget.theme,
+                                  onCardTap: (index) => gameProvider.selectCard(index),
+                                ),
+                              ),
+                              SizedBox(height: isLargeScreen ? 20 : 12),
+                              EnhancedGameControls(
+                                gameProvider: gameProvider,
+                                theme: widget.theme,
+                                isCompact: !isLargeScreen,
+                                onRestart: () => _showRestartConfirmationDialog(gameProvider),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                     Align(
@@ -179,100 +199,34 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildHeader(GameProvider gameProvider) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            _showExitConfirmationDialog();
-          },
-        ),
-        Expanded(
-          child: Text(
-            'Jogo da Memória',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh, color: Colors.white),
-          onPressed: () {
-            _showRestartConfirmationDialog(gameProvider);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGameBoard(GameProvider gameProvider) {
-    final game = gameProvider.game;
-    final cardSize = GameUtils.calculateCardSize(context);
+  Widget _buildHeader(GameProvider gameProvider, {bool isCompact = false}) {
+    final fontSize = isCompact ? 20.0 : 24.0;
+    final iconSize = isCompact ? 22.0 : 24.0;
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(8.0),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 5,
-          childAspectRatio: 0.7,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-        ),
-        itemCount: game.cards.length,
-        itemBuilder: (context, index) {
-          final card = game.cards[index];
-          return MemoryCard(
-            card: card,
-            theme: widget.theme,
-            onCardTap: (index) => gameProvider.selectCard(index),
-            index: index,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildGameControls(GameProvider gameProvider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: ResponsiveLayout.getHeaderHeight(context),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Movimentos: ${gameProvider.game.totalMoves}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          IconButton(
+            icon: Icon(Icons.arrow_back, color: Colors.white, size: iconSize),
+            onPressed: () {
+              _showExitConfirmationDialog();
+            },
+          ),
+          Expanded(
+            child: Text(
+              'Jogo da Memória',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
-          const Spacer(),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reiniciar'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.theme.primaryColor,
-              foregroundColor: Colors.white,
-            ),
+          IconButton(
+            icon: Icon(Icons.refresh, color: Colors.white, size: iconSize),
             onPressed: () {
               _showRestartConfirmationDialog(gameProvider);
             },
@@ -281,6 +235,10 @@ class _GameScreenState extends State<GameScreen> {
       ),
     );
   }
+
+
+
+
 
   void _showExitConfirmationDialog() {
     showDialog(
