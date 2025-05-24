@@ -9,6 +9,7 @@ import 'package:mobile_memory_game/widgets/score_board.dart';
 import 'package:mobile_memory_game/widgets/enhanced_score_board.dart';
 import 'package:mobile_memory_game/widgets/enhanced_game_controls.dart';
 import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
+import 'package:mobile_memory_game/widgets/particle_system.dart';
 import 'package:mobile_memory_game/utils/game_utils.dart';
 import 'package:mobile_memory_game/utils/responsive_layout.dart';
 
@@ -107,6 +108,37 @@ class _GameScreenState extends State<GameScreen> {
             _confettiController.play();
             _hasShownResult = true;
             
+            // Dispara celebração épica de partículas
+            Future.delayed(const Duration(milliseconds: 500), () {
+              final screenSize = MediaQuery.of(context).size;
+              final particleSystem = ParticleSystem.of(context);
+              if (particleSystem != null) {
+                // Múltiplas explosões de confetti
+                for (int i = 0; i < 5; i++) {
+                  Future.delayed(Duration(milliseconds: i * 300), () {
+                    particleSystem.confetti(
+                      position: Offset(
+                        screenSize.width * (0.2 + i * 0.15),
+                        screenSize.height * 0.3,
+                      ),
+                      count: 35,
+                      spread: 200,
+                    );
+                  });
+                }
+                
+                // Trail de estrelas pelo centro
+                Future.delayed(const Duration(milliseconds: 800), () {
+                  particleSystem.starTrail(
+                    start: Offset(0, screenSize.height * 0.5),
+                    end: Offset(screenSize.width, screenSize.height * 0.5),
+                    color: widget.theme.primaryColor,
+                    count: 15,
+                  );
+                });
+              }
+            });
+            
             // Navega para a tela de resultado após um breve atraso
             Future.delayed(const Duration(seconds: 3), () {
               Navigator.of(context).pushReplacement(
@@ -132,11 +164,13 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
               child: SafeArea(
-                child: Stack(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: LayoutBuilder(
+                child: ParticleSystem(
+                  enabled: true,
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isLargeScreen = ResponsiveLayout.isLargeScreen(context);
                           
@@ -191,7 +225,8 @@ class _GameScreenState extends State<GameScreen> {
                         ],
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

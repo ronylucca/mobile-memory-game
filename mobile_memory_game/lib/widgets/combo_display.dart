@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
+import 'package:mobile_memory_game/widgets/particle_system.dart';
 
 class ComboDisplay extends StatefulWidget {
   final int comboCount;
@@ -81,6 +82,33 @@ class _ComboDisplayState extends State<ComboDisplay>
       
       if (!_scaleController.isAnimating) {
         _scaleController.repeat(reverse: true);
+      }
+      
+      // Dispara confetti para combos altos
+      if (widget.comboCount >= 3) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+          if (renderBox != null) {
+            final position = renderBox.localToGlobal(Offset.zero);
+            final comboCenter = position + Offset(
+              renderBox.size.width / 2,
+              renderBox.size.height / 2,
+            );
+            
+            final particleSystem = ParticleSystem.of(context);
+            if (particleSystem != null) {
+              // Intensidade baseada no combo
+              final intensity = widget.comboCount >= 5 ? 2.0 : 1.5;
+              final count = widget.comboCount >= 5 ? 30 : 20;
+              
+              particleSystem.confetti(
+                position: comboCenter,
+                count: count,
+                spread: 150 * intensity,
+              );
+            }
+          }
+        });
       }
     }
     

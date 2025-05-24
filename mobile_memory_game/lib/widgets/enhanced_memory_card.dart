@@ -4,6 +4,7 @@ import 'package:mobile_memory_game/models/card_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
 import 'package:mobile_memory_game/utils/audio_manager.dart';
 import 'package:mobile_memory_game/providers/game_provider.dart';
+import 'package:mobile_memory_game/widgets/particle_system.dart';
 import 'package:provider/provider.dart';
 
 class EnhancedMemoryCard extends StatefulWidget {
@@ -138,6 +139,41 @@ class _EnhancedMemoryCardState extends State<EnhancedMemoryCard>
     setState(() {
       _showingMatchFeedback = true;
     });
+    
+    // Dispara partículas de explosão na posição da carta
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      final cardCenter = position + Offset(
+        renderBox.size.width / 2,
+        renderBox.size.height / 2,
+      );
+      
+      // Busca o ParticleSystem mais próximo
+      final particleSystem = ParticleSystem.of(context);
+      if (particleSystem != null) {
+        final gameProvider = context.read<GameProvider>();
+        final game = gameProvider.game;
+        final playerColor = _getMatchedPlayerColor(game);
+        
+        // Explosão de partículas na cor do jogador
+        particleSystem.explode(
+          position: cardCenter,
+          color: playerColor,
+          count: 12,
+          intensity: 1.0,
+        );
+        
+        // Sparkles adicionais
+        Future.delayed(const Duration(milliseconds: 200), () {
+          particleSystem.sparkle(
+            position: cardCenter,
+            color: playerColor.withOpacity(0.8),
+            count: 6,
+          );
+        });
+      }
+    }
     
     _successController.forward().then((_) {
       _successController.reverse().then((_) {
