@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/player_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
+import 'package:mobile_memory_game/models/game_model.dart';
 import 'package:mobile_memory_game/widgets/combo_display.dart';
+import 'package:mobile_memory_game/widgets/animated_timer.dart';
 
 class EnhancedScoreBoard extends StatefulWidget {
   final List<PlayerModel> players;
@@ -10,6 +12,12 @@ class EnhancedScoreBoard extends StatefulWidget {
   final bool isCompact;
   final int comboCount;
   final int maxCombo;
+  
+  // Campos do timer
+  final GameMode gameMode;
+  final String? formattedTimeRemaining;
+  final bool isTimerPaused;
+  final VoidCallback? onTimerTap;
 
   const EnhancedScoreBoard({
     super.key,
@@ -19,6 +27,10 @@ class EnhancedScoreBoard extends StatefulWidget {
     this.isCompact = false,
     this.comboCount = 0,
     this.maxCombo = 0,
+    this.gameMode = GameMode.zen,
+    this.formattedTimeRemaining,
+    this.isTimerPaused = false,
+    this.onTimerTap,
   });
 
   @override
@@ -130,7 +142,8 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                     isCompact: true,
                   ),
                 ),
-              // ScoreBoard principal
+              
+              // ScoreBoard principal com timer no meio
               Row(
                 children: [
                   Expanded(
@@ -140,24 +153,13 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                       isLeft: true,
                     ),
                   ),
+                  
+                  // Timer/Zen no centro entre os jogadores
                   Container(
-                    width: 2,
-                    height: 30, // Reduzido de 60 para 30
-                    margin: const EdgeInsets.symmetric(horizontal: 12), // Reduzido margem
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          widget.theme.primaryColor.withOpacity(0.3),
-                          widget.theme.secondaryColor.withOpacity(0.3),
-                          Colors.transparent,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(1),
-                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    child: _buildTimerSection(),
                   ),
+                  
                   Expanded(
                     child: _buildEnhancedPlayerScore(
                       widget.players[1],
@@ -172,6 +174,55 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
         ),
       ),
     );
+  }
+
+  Widget _buildTimerSection() {
+    return Center(
+      child: widget.gameMode == GameMode.zen
+          ? ZenModeIndicator(
+              primaryColor: widget.theme.primaryColor,
+              secondaryColor: widget.theme.secondaryColor,
+            )
+          : widget.formattedTimeRemaining != null
+              ? AnimatedTimer(
+                  timeText: widget.formattedTimeRemaining!,
+                  isWarning: _isWarningTime(),
+                  isCritical: _isCriticalTime(),
+                  isPaused: widget.isTimerPaused,
+                  onTap: widget.onTimerTap,
+                  primaryColor: widget.theme.primaryColor,
+                  secondaryColor: widget.theme.secondaryColor,
+                )
+              : const SizedBox(),
+    );
+  }
+
+  bool _isWarningTime() {
+    if (widget.formattedTimeRemaining == null) return false;
+    
+    // Extrai os segundos totais do formato MM:SS
+    final parts = widget.formattedTimeRemaining!.split(':');
+    if (parts.length != 2) return false;
+    
+    final minutes = int.tryParse(parts[0]) ?? 0;
+    final seconds = int.tryParse(parts[1]) ?? 0;
+    final totalSeconds = minutes * 60 + seconds;
+    
+    return totalSeconds <= 30 && totalSeconds > 10; // Warning nos últimos 30 segundos
+  }
+
+  bool _isCriticalTime() {
+    if (widget.formattedTimeRemaining == null) return false;
+    
+    // Extrai os segundos totais do formato MM:SS
+    final parts = widget.formattedTimeRemaining!.split(':');
+    if (parts.length != 2) return false;
+    
+    final minutes = int.tryParse(parts[0]) ?? 0;
+    final seconds = int.tryParse(parts[1]) ?? 0;
+    final totalSeconds = minutes * 60 + seconds;
+    
+    return totalSeconds <= 10; // Critical nos últimos 10 segundos
   }
 
   Widget _buildEnhancedPlayerScore(

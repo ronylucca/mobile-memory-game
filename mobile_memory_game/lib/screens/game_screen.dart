@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
+import 'package:mobile_memory_game/models/game_model.dart';
 import 'package:mobile_memory_game/providers/game_provider.dart';
 import 'package:mobile_memory_game/screens/game_result_screen.dart';
 import 'package:mobile_memory_game/widgets/memory_card.dart';
@@ -17,12 +18,16 @@ class GameScreen extends StatefulWidget {
   final String player1Name;
   final String player2Name;
   final ThemeModel theme;
+  final GameMode gameMode;
+  final int? timerMinutes;
 
   const GameScreen({
     super.key,
     required this.player1Name,
     required this.player2Name,
     required this.theme,
+    this.gameMode = GameMode.zen,
+    this.timerMinutes,
   });
 
   @override
@@ -48,6 +53,8 @@ class _GameScreenState extends State<GameScreen> {
         player1Name: widget.player1Name,
         player2Name: widget.player2Name,
         theme: widget.theme,
+        gameMode: widget.gameMode,
+        timerMinutes: widget.timerMinutes,
       );
       if (mounted) {
         setState(() {
@@ -185,6 +192,10 @@ class _GameScreenState extends State<GameScreen> {
                                 isCompact: !isLargeScreen,
                                 comboCount: game.comboCount,
                                 maxCombo: game.maxCombo,
+                                gameMode: game.gameMode,
+                                formattedTimeRemaining: game.formattedTimeRemaining,
+                                isTimerPaused: game.isTimerPaused,
+                                onTimerTap: () => gameProvider.toggleTimerPause(),
                               ),
                               SizedBox(height: isLargeScreen ? 20 : 12),
                               Expanded(
@@ -272,10 +283,6 @@ class _GameScreenState extends State<GameScreen> {
       ),
     );
   }
-
-
-
-
 
   void _showExitConfirmationDialog() {
     showDialog(

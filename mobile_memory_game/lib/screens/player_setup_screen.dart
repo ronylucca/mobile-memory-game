@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
+import 'package:mobile_memory_game/models/game_model.dart';
 import 'package:mobile_memory_game/screens/game_screen.dart';
 import 'package:mobile_memory_game/utils/audio_manager.dart';
 
@@ -20,6 +21,11 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
   final TextEditingController _player2Controller = TextEditingController(text: 'Jogador 2');
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final AudioManager _audioManager = AudioManager();
+  
+  // Campos para o timer
+  GameMode _selectedGameMode = GameMode.zen;
+  int _selectedMinutes = 5;
+  final List<int> _availableMinutes = [1, 2, 3, 5, 10, 15, 20, 30];
 
   @override
   void dispose() {
@@ -122,6 +128,44 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                               icon: Icons.person,
                               color: widget.selectedTheme.secondaryColor,
                             ),
+                            const SizedBox(height: 30),
+                            
+                            // Seção de modo de jogo
+                            const Text(
+                              'Modo de Jogo',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            
+                            // Opção Zen
+                            _buildGameModeOption(
+                              title: 'Modo Zen',
+                              subtitle: 'Jogue sem pressa',
+                              icon: Icons.self_improvement,
+                              mode: GameMode.zen,
+                              color: widget.selectedTheme.primaryColor,
+                            ),
+                            const SizedBox(height: 15),
+                            
+                            // Opção Timer
+                            _buildGameModeOption(
+                              title: 'Modo Timer',
+                              subtitle: 'Jogue contra o tempo',
+                              icon: Icons.timer,
+                              mode: GameMode.timer,
+                              color: widget.selectedTheme.secondaryColor,
+                            ),
+                            
+                            // Seletor de minutos (apenas para modo timer)
+                            if (_selectedGameMode == GameMode.timer) ...[
+                              const SizedBox(height: 20),
+                              _buildTimerSelector(),
+                            ],
+                            
                             const Spacer(),
                             ElevatedButton(
                               onPressed: _startGame,
@@ -133,9 +177,11 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: const Text(
-                                'Começar Jogo',
-                                style: TextStyle(
+                              child: Text(
+                                _selectedGameMode == GameMode.zen 
+                                    ? 'Começar Jogo Zen' 
+                                    : 'Começar Jogo ($_selectedMinutes min)',
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -189,6 +235,135 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
     );
   }
 
+  Widget _buildGameModeOption({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required GameMode mode,
+    required Color color,
+  }) {
+    final isSelected = _selectedGameMode == mode;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedGameMode = mode;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : color.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? color : color.withOpacity(0.7),
+              size: 28,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? color : Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isSelected ? color.withOpacity(0.8) : Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: color,
+                size: 24,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimerSelector() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: widget.selectedTheme.secondaryColor.withOpacity(0.3),
+        ),
+        color: widget.selectedTheme.secondaryColor.withOpacity(0.05),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Duração do Timer',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: widget.selectedTheme.secondaryColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _availableMinutes.map((minutes) {
+              final isSelected = _selectedMinutes == minutes;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedMinutes = minutes;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: isSelected 
+                        ? widget.selectedTheme.secondaryColor 
+                        : widget.selectedTheme.secondaryColor.withOpacity(0.1),
+                    border: Border.all(
+                      color: widget.selectedTheme.secondaryColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '${minutes}min',
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : widget.selectedTheme.secondaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _startGame() {
     if (_formKey.currentState!.validate()) {
       // Define o tema atual no AudioManager antes de tocar o som
@@ -204,6 +379,8 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
             player1Name: _player1Controller.text,
             player2Name: _player2Controller.text,
             theme: widget.selectedTheme,
+            gameMode: _selectedGameMode,
+            timerMinutes: _selectedGameMode == GameMode.timer ? _selectedMinutes : null,
           ),
         ),
       );

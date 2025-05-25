@@ -4,6 +4,7 @@ import 'package:mobile_memory_game/models/player_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
 
 enum GameStatus { notStarted, inProgress, paused, completed }
+enum GameMode { zen, timer }
 
 class GameModel {
   final String id;
@@ -19,6 +20,12 @@ class GameModel {
   final DateTime? lastMatchTime;
   final Color player1Color;
   final Color player2Color;
+  
+  // Campos do timer
+  final GameMode gameMode;
+  final int? timerDurationMinutes; // duração inicial em minutos (null para modo zen)
+  final int? timeRemainingSeconds; // tempo restante em segundos (null para modo zen)
+  final bool isTimerPaused;
 
   GameModel({
     required this.id,
@@ -34,6 +41,10 @@ class GameModel {
     this.lastMatchTime,
     required this.player1Color,
     required this.player2Color,
+    this.gameMode = GameMode.zen,
+    this.timerDurationMinutes,
+    this.timeRemainingSeconds,
+    this.isTimerPaused = false,
   });
 
   GameModel copyWith({
@@ -50,6 +61,10 @@ class GameModel {
     DateTime? lastMatchTime,
     Color? player1Color,
     Color? player2Color,
+    GameMode? gameMode,
+    int? timerDurationMinutes,
+    int? timeRemainingSeconds,
+    bool? isTimerPaused,
   }) {
     return GameModel(
       id: id ?? this.id,
@@ -65,19 +80,36 @@ class GameModel {
       lastMatchTime: lastMatchTime ?? this.lastMatchTime,
       player1Color: player1Color ?? this.player1Color,
       player2Color: player2Color ?? this.player2Color,
+      gameMode: gameMode ?? this.gameMode,
+      timerDurationMinutes: timerDurationMinutes ?? this.timerDurationMinutes,
+      timeRemainingSeconds: timeRemainingSeconds ?? this.timeRemainingSeconds,
+      isTimerPaused: isTimerPaused ?? this.isTimerPaused,
     );
   }
 
   PlayerModel get currentPlayer => players[currentPlayerIndex];
 
   bool get isGameCompleted =>
-      cards.every((card) => card.isMatched) || status == GameStatus.completed;
+      cards.every((card) => card.isMatched) || 
+      status == GameStatus.completed ||
+      (gameMode == GameMode.timer && timeRemainingSeconds == 0);
 
   int get player1Score => players[0].score;
   int get player2Score => players[1].score;
 
   String get winnerName {
     if (!isGameCompleted) return '';
+    
+    // Se o tempo acabou no modo timer
+    if (gameMode == GameMode.timer && timeRemainingSeconds == 0) {
+      if (player1Score > player2Score) {
+        return players[0].name;
+      } else if (player2Score > player1Score) {
+        return players[1].name;
+      } else {
+        return 'Empate';
+      }
+    }
     
     if (player1Score > player2Score) {
       return players[0].name;
@@ -86,5 +118,14 @@ class GameModel {
     } else {
       return 'Empate';
     }
+  }
+  
+  // Formata o tempo restante em MM:SS
+  String get formattedTimeRemaining {
+    if (gameMode == GameMode.zen || timeRemainingSeconds == null) return '';
+    
+    final minutes = timeRemainingSeconds! ~/ 60;
+    final seconds = timeRemainingSeconds! % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 } 

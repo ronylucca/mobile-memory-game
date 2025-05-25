@@ -20,6 +20,9 @@ class GameProvider extends ChangeNotifier {
   // Flag para indicar se estamos usando icons ou imagens reais
   bool _useIcons = true;
   
+  // Timer fields
+  Timer? _gameTimer;
+  
   GameModel get game {
     if (_game == null) {
       throw StateError('O jogo não foi inicializado. Chame initializeGame() primeiro.');
@@ -36,6 +39,8 @@ class GameProvider extends ChangeNotifier {
     required String player1Name,
     required String player2Name,
     required ThemeModel theme,
+    GameMode gameMode = GameMode.zen,
+    int? timerMinutes,
   }) async {
     debugPrint('Inicializando jogo com tema: ${theme.id}');
     
@@ -59,6 +64,12 @@ class GameProvider extends ChangeNotifier {
     // Gera cores distintas para cada jogador baseadas no tema
     final playerColors = _generatePlayerColors(theme);
 
+    // Configura o timer se for modo timer
+    int? timeRemainingSeconds;
+    if (gameMode == GameMode.timer && timerMinutes != null) {
+      timeRemainingSeconds = timerMinutes * 60;
+    }
+
     _game = GameModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       cards: cards,
@@ -68,7 +79,16 @@ class GameProvider extends ChangeNotifier {
       currentPlayerIndex: starterIndex,
       player1Color: playerColors[0],
       player2Color: playerColors[1],
+      gameMode: gameMode,
+      timerDurationMinutes: timerMinutes,
+      timeRemainingSeconds: timeRemainingSeconds,
+      isTimerPaused: false,
     );
+    
+    // Inicia o timer se for modo timer
+    if (gameMode == GameMode.timer) {
+      _startTimer();
+    }
     
     // Define o tema atual no AudioManager
     debugPrint('Definindo tema atual no AudioManager: ${theme.id}');
@@ -338,6 +358,8 @@ class GameProvider extends ChangeNotifier {
       player1Name: _game!.players[0].name,
       player2Name: _game!.players[1].name,
       theme: _game!.theme,
+      gameMode: _game!.gameMode,
+      timerMinutes: _game!.timerDurationMinutes,
     );
   }
 
@@ -357,8 +379,58 @@ class GameProvider extends ChangeNotifier {
     }
   }
 
+  // Inicia o timer
+  void _startTimer() {
+    _gameTimer?.cancel(); // Cancela timer anterior se existir
+    
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_game?.gameMode == GameMode.timer && 
+          _game?.timeRemainingSeconds != null && 
+          !(_game?.isTimerPaused ?? true)) {
+        
+        final newTime = _game!.timeRemainingSeconds! - 1;
+        
+        if (newTime <= 0) {
+          // Tempo acabou
+          _gameTimer?.cancel();
+          _game = _game!.copyWith(
+            timeRemainingSeconds: 0,
+            status: GameStatus.completed,
+          );
+          
+          // Toca som de fim de tempo
+          _audioManager.playThemeSound('game_over');
+        } else {
+          _game = _game!.copyWith(timeRemainingSeconds: newTime);
+          
+          // Aviso sonoro nos últimos 10 segundos
+          if (newTime <= 10) {
+            _audioManager.playThemeSound('warning');
+          }
+        }
+        
+        notifyListeners();
+      }
+    });
+  }
+
+  // Pausa/Resume timer
+  void toggleTimerPause() {
+    if (_game?.gameMode == GameMode.timer) {
+      _game = _game!.copyWith(isTimerPaused: !_game!.isTimerPaused);
+      notifyListeners();
+    }
+  }
+
+  // Para o timer
+  void _stopTimer() {
+    _gameTimer?.cancel();
+    _gameTimer = null;
+  }
+
   @override
   void dispose() {
+    _stopTimer();
     super.dispose();
   }
 } 
