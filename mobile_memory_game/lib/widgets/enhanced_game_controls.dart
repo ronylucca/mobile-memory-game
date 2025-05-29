@@ -7,12 +7,14 @@ class EnhancedGameControls extends StatefulWidget {
   final ThemeModel theme;
   final bool isCompact;
   final VoidCallback onRestart;
+  final VoidCallback? onBack;
 
   const EnhancedGameControls({
     super.key,
     required this.gameProvider,
     required this.theme,
     required this.onRestart,
+    this.onBack,
     this.isCompact = false,
   });
 
@@ -24,7 +26,6 @@ class _EnhancedGameControlsState extends State<EnhancedGameControls>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
@@ -37,14 +38,6 @@ class _EnhancedGameControlsState extends State<EnhancedGameControls>
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _colorAnimation = ColorTween(
-      begin: widget.theme.primaryColor,
-      end: widget.theme.secondaryColor,
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -97,6 +90,30 @@ class _EnhancedGameControlsState extends State<EnhancedGameControls>
         padding: EdgeInsets.all(padding),
         child: Row(
           children: [
+            // Botão de voltar
+            if (widget.onBack != null) ...[
+              GestureDetector(
+                onTap: widget.onBack,
+                child: Container(
+                  padding: EdgeInsets.all(widget.isCompact ? 8 : 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.grey[700],
+                    size: iconSize,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            
             // Informações do jogo
             Expanded(
               child: Row(

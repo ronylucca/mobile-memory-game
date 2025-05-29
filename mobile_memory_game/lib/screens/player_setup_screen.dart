@@ -713,15 +713,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                   ),
                 ),
               ),
-              Switch.adaptive(
-                value: _isAIEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _isAIEnabled = value;
-                  });
-                },
-                activeColor: readableColor,
-              ),
+              _buildAIToggleIcon(readableColor),
             ],
           ),
           
@@ -891,15 +883,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                   ),
                 ),
               ),
-              Switch.adaptive(
-                value: _isAIEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _isAIEnabled = value;
-                  });
-                },
-                activeColor: readableColor,
-              ),
+              _buildAIToggleIcon(readableColor, isCompact: true),
             ],
           ),
           
@@ -971,6 +955,87 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildAIToggleIcon(Color themeColor, {bool isCompact = false}) {
+    final iconSize = isCompact ? 28.0 : 36.0;
+    final containerSize = isCompact ? 48.0 : 56.0;
+    
+    return Tooltip(
+      message: _isAIEnabled ? 'Clique para Jogador Humano' : 'Clique para IA',
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _isAIEnabled = !_isAIEnabled;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: containerSize,
+          height: containerSize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _isAIEnabled
+                  ? [
+                      themeColor,
+                      themeColor.withOpacity(0.7),
+                    ]
+                  : [
+                      Colors.grey.shade200,
+                      Colors.grey.shade300,
+                    ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _isAIEnabled 
+                    ? themeColor.withOpacity(0.4)
+                    : Colors.grey.withOpacity(0.2),
+                blurRadius: _isAIEnabled ? 12.0 : 4.0,
+                offset: const Offset(0, 3),
+                spreadRadius: _isAIEnabled ? 2.0 : 0.5,
+              ),
+              if (_isAIEnabled)
+                BoxShadow(
+                  color: themeColor.withOpacity(0.2),
+                  blurRadius: 20.0,
+                  offset: const Offset(0, 6),
+                  spreadRadius: 4.0,
+                ),
+            ],
+            border: Border.all(
+              color: _isAIEnabled 
+                  ? Colors.white.withOpacity(0.4)
+                  : Colors.grey.shade400,
+              width: _isAIEnabled ? 1.5 : 1.0,
+            ),
+          ),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return RotationTransition(
+                  turns: animation,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: Icon(
+                _isAIEnabled ? Icons.person_outline : Icons.smart_toy_outlined,
+                key: ValueKey(_isAIEnabled),
+                size: iconSize,
+                color: _isAIEnabled ? Colors.white : Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 } 

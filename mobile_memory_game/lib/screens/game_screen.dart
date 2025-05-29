@@ -10,6 +10,7 @@ import 'package:mobile_memory_game/utils/responsive_layout.dart';
 import 'package:mobile_memory_game/widgets/enhanced_score_board_with_combo.dart';
 import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
 import 'package:mobile_memory_game/widgets/particle_system.dart';
+import 'package:mobile_memory_game/widgets/enhanced_game_controls.dart';
 
 class GameScreen extends StatefulWidget {
   final String player1Name;
@@ -186,7 +187,13 @@ class _GameScreenState extends State<GameScreen> {
                           
                           return Column(
                             children: [
-                              _buildHeader(gameProvider, isCompact: !isLargeScreen),
+                              EnhancedGameControls(
+                                gameProvider: gameProvider,
+                                theme: widget.theme,
+                                isCompact: !isLargeScreen,
+                                onRestart: () => _showRestartConfirmationDialog(gameProvider),
+                                onBack: () => _showExitConfirmationDialog(),
+                              ),
                               SizedBox(height: isLargeScreen ? 20 : 12),
                               EnhancedScoreBoardWithCombo(
                                 players: game.players,
@@ -239,43 +246,6 @@ class _GameScreenState extends State<GameScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildHeader(GameProvider gameProvider, {bool isCompact = false}) {
-    final fontSize = isCompact ? 20.0 : 24.0;
-    final iconSize = isCompact ? 22.0 : 24.0;
-    
-    return SizedBox(
-      height: ResponsiveLayout.getHeaderHeight(context),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white, size: iconSize),
-            onPressed: () {
-              _showExitConfirmationDialog();
-            },
-          ),
-          Expanded(
-            child: Text(
-              'Jogo da Memória',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white, size: iconSize),
-            onPressed: () {
-              _showRestartConfirmationDialog(gameProvider);
-            },
-          ),
-        ],
       ),
     );
   }
