@@ -13,6 +13,7 @@ import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
 import 'package:mobile_memory_game/widgets/particle_system.dart';
 import 'package:mobile_memory_game/utils/game_utils.dart';
 import 'package:mobile_memory_game/utils/responsive_layout.dart';
+import 'package:mobile_memory_game/widgets/enhanced_score_board_with_combo.dart';
 
 class GameScreen extends StatefulWidget {
   final String player1Name;
@@ -185,7 +186,7 @@ class _GameScreenState extends State<GameScreen> {
                             children: [
                               _buildHeader(gameProvider, isCompact: !isLargeScreen),
                               SizedBox(height: isLargeScreen ? 20 : 12),
-                              EnhancedScoreBoard(
+                              EnhancedScoreBoardWithCombo(
                                 players: game.players,
                                 theme: widget.theme,
                                 currentPlayerIndex: game.currentPlayerIndex,

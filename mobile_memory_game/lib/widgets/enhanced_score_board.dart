@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/player_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
 import 'package:mobile_memory_game/models/game_model.dart';
-import 'package:mobile_memory_game/widgets/combo_display.dart';
+import 'package:mobile_memory_game/widgets/floating_combo_display.dart';
 import 'package:mobile_memory_game/widgets/animated_timer.dart';
 
 class EnhancedScoreBoard extends StatefulWidget {
@@ -41,23 +41,30 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _glowController;
+  late AnimationController _comboGlowController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _glowAnimation;
+  late Animation<double> _comboGlowAnimation;
 
   @override
   void initState() {
     super.initState();
     
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-    
+
     _glowController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
+    _comboGlowController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.05,
@@ -65,7 +72,7 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
-    
+
     _glowAnimation = Tween<double>(
       begin: 0.3,
       end: 1.0,
@@ -73,15 +80,39 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
       parent: _glowController,
       curve: Curves.easeInOut,
     ));
-    
+
+    _comboGlowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_comboGlowController);
+
     _pulseController.repeat(reverse: true);
     _glowController.repeat(reverse: true);
+    
+    // Iniciar efeito combo se necessário
+    if (widget.comboCount >= 2) {
+      _comboGlowController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(EnhancedScoreBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Controlar animação do combo
+    if (widget.comboCount >= 2 && oldWidget.comboCount < 2) {
+      _comboGlowController.repeat();
+    } else if (widget.comboCount < 2 && oldWidget.comboCount >= 2) {
+      _comboGlowController.stop();
+      _comboGlowController.reset();
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     _glowController.dispose();
+    _comboGlowController.dispose();
     super.dispose();
   }
 
@@ -129,45 +160,28 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
             vertical: verticalPadding,
             horizontal: horizontalPadding,
           ),
-          child: Column(
+          child: Row(
             children: [
-              // Combo Display no topo
-              if (widget.comboCount >= 2)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ComboDisplay(
-                    comboCount: widget.comboCount,
-                    maxCombo: widget.maxCombo,
-                    theme: widget.theme,
-                    isCompact: true,
-                  ),
+              Expanded(
+                child: _buildEnhancedPlayerScore(
+                  widget.players[0],
+                  isCurrentPlayer: widget.currentPlayerIndex == 0,
+                  isLeft: true,
                 ),
+              ),
               
-              // ScoreBoard principal com timer no meio
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildEnhancedPlayerScore(
-                      widget.players[0],
-                      isCurrentPlayer: widget.currentPlayerIndex == 0,
-                      isLeft: true,
-                    ),
-                  ),
-                  
-                  // Timer/Zen no centro entre os jogadores
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12),
-                    child: _buildTimerSection(),
-                  ),
-                  
-                  Expanded(
-                    child: _buildEnhancedPlayerScore(
-                      widget.players[1],
-                      isCurrentPlayer: widget.currentPlayerIndex == 1,
-                      isLeft: false,
-                    ),
-                  ),
-                ],
+              // Timer/Zen no centro entre os jogadores
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                child: _buildTimerSection(),
+              ),
+              
+              Expanded(
+                child: _buildEnhancedPlayerScore(
+                  widget.players[1],
+                  isCurrentPlayer: widget.currentPlayerIndex == 1,
+                  isLeft: false,
+                ),
               ),
             ],
           ),
@@ -230,16 +244,45 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
     required bool isCurrentPlayer,
     required bool isLeft,
   }) {
-    final nameFontSize = widget.isCompact ? 12.0 : 14.0; // Reduzido
-    final scoreFontSize = widget.isCompact ? 18.0 : 20.0; // Reduzido
-    final turnFontSize = widget.isCompact ? 9.0 : 10.0; // Reduzido
+    final nameFontSize = widget.isCompact ? 12.0 : 14.0;
+    final scoreFontSize = widget.isCompact ? 18.0 : 20.0;
+    final turnFontSize = widget.isCompact ? 9.0 : 10.0;
+    
+    // Verifica se deve mostrar efeito combo
+    final showComboEffect = isCurrentPlayer && widget.comboCount >= 2;
     
     return AnimatedBuilder(
-      animation: isCurrentPlayer ? _pulseAnimation : 
-                 const AlwaysStoppedAnimation(1.0),
+      animation: isCurrentPlayer ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
       builder: (context, child) {
+        // Cores rainbow para combo - implementando de forma segura
+        Color comboColor1 = widget.theme.primaryColor;
+        Color comboColor2 = widget.theme.secondaryColor;
+        
+        if (showComboEffect && widget.comboCount >= 2) { // Iniciar rainbow no 2x
+          try {
+            final comboValue = _comboGlowAnimation.value.clamp(0.0, 1.0);
+            final hue = (comboValue * 360) % 360;
+            
+            // Validar valores HSV
+            if (hue.isNaN || hue.isInfinite) {
+              comboColor1 = _getFallbackColor1(widget.comboCount);
+              comboColor2 = _getFallbackColor2(widget.comboCount);
+            } else {
+              comboColor1 = HSVColor.fromAHSV(1.0, hue.clamp(0.0, 360.0), 0.7, 0.9).toColor();
+              comboColor2 = HSVColor.fromAHSV(1.0, (hue + 60).clamp(0.0, 360.0) % 360, 0.7, 0.9).toColor();
+            }
+          } catch (e) {
+            // Fallback para cores fixas em caso de erro
+            comboColor1 = _getFallbackColor1(widget.comboCount);
+            comboColor2 = _getFallbackColor2(widget.comboCount);
+          }
+        }
+        
+        // Validar valores das animações
+        final pulseValue = isCurrentPlayer ? _pulseAnimation.value.clamp(0.5, 2.0) : 1.0;
+        
         return Transform.scale(
-          scale: isCurrentPlayer ? _pulseAnimation.value : 1.0,
+          scale: pulseValue,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
@@ -247,30 +290,50 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                   ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        widget.theme.primaryColor.withOpacity(0.2),
-                        widget.theme.secondaryColor.withOpacity(0.15),
-                      ],
+                      colors: showComboEffect
+                          ? [
+                              comboColor1.withOpacity(0.3.clamp(0.0, 1.0)),
+                              comboColor2.withOpacity(0.2.clamp(0.0, 1.0)),
+                            ]
+                          : [
+                              widget.theme.primaryColor.withOpacity(0.2.clamp(0.0, 1.0)),
+                              widget.theme.secondaryColor.withOpacity(0.15.clamp(0.0, 1.0)),
+                            ],
                     )
                   : null,
               border: Border.all(
                 color: isCurrentPlayer
-                    ? widget.theme.primaryColor.withOpacity(0.4)
-                    : Colors.grey.withOpacity(0.2),
-                width: isCurrentPlayer ? 2.5 : 1.0,
+                    ? (showComboEffect ? comboColor1.withOpacity(0.6.clamp(0.0, 1.0)) : widget.theme.primaryColor.withOpacity(0.4.clamp(0.0, 1.0)))
+                    : Colors.grey.withOpacity(0.2.clamp(0.0, 1.0)),
+                width: isCurrentPlayer ? (showComboEffect ? 3.0 : 2.5) : 1.0,
               ),
               boxShadow: isCurrentPlayer
                   ? [
                       BoxShadow(
-                        color: widget.theme.primaryColor.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 2,
+                        color: showComboEffect 
+                            ? comboColor1.withOpacity(0.4.clamp(0.0, 1.0))
+                            : widget.theme.primaryColor.withOpacity(0.3.clamp(0.0, 1.0)),
+                        blurRadius: showComboEffect ? 10 : 8,
+                        offset: const Offset(0, 2),
                       ),
+                      if (showComboEffect) ...[
+                        BoxShadow(
+                          color: comboColor2.withOpacity(0.4.clamp(0.0, 1.0)),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                          spreadRadius: 4,
+                        ),
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.3.clamp(0.0, 1.0)),
+                          blurRadius: 15,
+                          offset: const Offset(0, -2),
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ]
                   : null,
             ),
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12), // Reduzido
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             child: Column(
               children: [
                 // Nome do jogador com ícone
@@ -280,11 +343,11 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                     Icon(
                       isLeft ? Icons.person : Icons.person_outline,
                       color: isCurrentPlayer
-                          ? widget.theme.primaryColor
+                          ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
                           : Colors.grey[600],
-                      size: widget.isCompact ? 14 : 16, // Reduzido
+                      size: widget.isCompact ? 14 : 16,
                     ),
-                    const SizedBox(width: 4), // Reduzido
+                    const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         player.name,
@@ -292,7 +355,7 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                           fontSize: nameFontSize,
                           fontWeight: FontWeight.bold,
                           color: isCurrentPlayer
-                              ? widget.theme.primaryColor
+                              ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
                               : Colors.grey[700],
                           letterSpacing: 0.5,
                         ),
@@ -302,39 +365,47 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                   ],
                 ),
                 
-                const SizedBox(height: 4), // Reduzido
+                const SizedBox(height: 4),
                 
                 // Score com efeito de brilho
                 AnimatedBuilder(
                   animation: isCurrentPlayer ? _glowAnimation : 
                              const AlwaysStoppedAnimation(1.0),
                   builder: (context, child) {
+                    // Validar valores da animação de brilho
+                    final glowValue = isCurrentPlayer ? _glowAnimation.value.clamp(0.0, 1.0) : 1.0;
+                    
                     return Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8, // Reduzido
-                        vertical: 3, // Reduzido
+                        horizontal: 8,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         gradient: LinearGradient(
                           colors: isCurrentPlayer
-                              ? [
-                                  widget.theme.primaryColor.withOpacity(0.1),
-                                  widget.theme.secondaryColor.withOpacity(0.1),
-                                ]
+                              ? (showComboEffect
+                                  ? [
+                                      comboColor1.withOpacity(0.15.clamp(0.0, 1.0)),
+                                      comboColor2.withOpacity(0.15.clamp(0.0, 1.0)),
+                                    ]
+                                  : [
+                                      widget.theme.primaryColor.withOpacity(0.1.clamp(0.0, 1.0)),
+                                      widget.theme.secondaryColor.withOpacity(0.1.clamp(0.0, 1.0)),
+                                    ])
                               : [
-                                  Colors.grey.withOpacity(0.05),
-                                  Colors.grey.withOpacity(0.05),
+                                  Colors.grey.withOpacity(0.05.clamp(0.0, 1.0)),
+                                  Colors.grey.withOpacity(0.05.clamp(0.0, 1.0)),
                                 ],
                         ),
                         boxShadow: isCurrentPlayer
                             ? [
                                 BoxShadow(
-                                  color: widget.theme.primaryColor.withOpacity(
-                                    0.2 * _glowAnimation.value,
-                                  ),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
+                                  color: showComboEffect
+                                      ? comboColor1.withOpacity((0.3 * glowValue).clamp(0.0, 1.0))
+                                      : widget.theme.primaryColor.withOpacity((0.2 * glowValue).clamp(0.0, 1.0)),
+                                  blurRadius: showComboEffect ? 15 : 10,
+                                  spreadRadius: showComboEffect ? 3 : 2,
                                 ),
                               ]
                             : null,
@@ -346,18 +417,18 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                           Icon(
                             Icons.star_rounded,
                             color: isCurrentPlayer
-                                ? widget.theme.primaryColor
+                                ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
                                 : Colors.amber[600],
-                            size: widget.isCompact ? 16 : 18, // Reduzido
+                            size: widget.isCompact ? 16 : 18,
                           ),
-                          const SizedBox(width: 4), // Reduzido
+                          const SizedBox(width: 4),
                           Text(
                             player.score.toString(),
                             style: TextStyle(
                               fontSize: scoreFontSize,
                               fontWeight: FontWeight.bold,
                               color: isCurrentPlayer
-                                  ? widget.theme.primaryColor
+                                  ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
                                   : Colors.grey[700],
                               letterSpacing: 1.0,
                             ),
@@ -368,36 +439,40 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                   },
                 ),
                 
-                const SizedBox(height: 3), // Reduzido
+                const SizedBox(height: 3),
                 
                 // Indicador de turno
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  height: widget.isCompact ? 16 : 18, // Reduzido
+                  height: widget.isCompact ? 16 : 18,
                   child: isCurrentPlayer
                       ? Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8, // Reduzido
-                            vertical: 1, // Reduzido
+                            horizontal: 8,
+                            vertical: 1,
                           ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             gradient: LinearGradient(
-                              colors: [
-                                widget.theme.primaryColor,
-                                widget.theme.secondaryColor,
-                              ],
+                              colors: showComboEffect
+                                  ? [comboColor1, comboColor2]
+                                  : [
+                                      widget.theme.primaryColor,
+                                      widget.theme.secondaryColor,
+                                    ],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: widget.theme.primaryColor.withOpacity(0.3),
-                                blurRadius: 8,
+                                color: showComboEffect 
+                                    ? comboColor1.withOpacity(0.4.clamp(0.0, 1.0))
+                                    : widget.theme.primaryColor.withOpacity(0.3.clamp(0.0, 1.0)),
+                                blurRadius: showComboEffect ? 10 : 8,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Text(
-                            'SUA VEZ!',
+                            showComboEffect && widget.comboCount >= 3 ? 'COMBO!' : 'SUA VEZ!',
                             style: TextStyle(
                               fontSize: turnFontSize,
                               fontWeight: FontWeight.bold,
@@ -406,7 +481,7 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
                             ),
                           ),
                         )
-                      : const SizedBox(),
+                      : const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -414,5 +489,25 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
         );
       },
     );
+  }
+
+  Color _getFallbackColor1(int comboCount) {
+    if (comboCount >= 5) {
+      return Colors.purple.shade600;
+    } else if (comboCount >= 3) {
+      return Colors.orange.shade600;
+    } else {
+      return widget.theme.primaryColor;
+    }
+  }
+
+  Color _getFallbackColor2(int comboCount) {
+    if (comboCount >= 5) {
+      return Colors.pink.shade500;
+    } else if (comboCount >= 3) {
+      return Colors.red.shade500;
+    } else {
+      return widget.theme.secondaryColor;
+    }
   }
 } 

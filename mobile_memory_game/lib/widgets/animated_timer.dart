@@ -172,95 +172,43 @@ class _AnimatedTimerState extends State<AnimatedTimer>
             scale: widget.isCritical 
                 ? _pulseAnimation.value * _scaleAnimation.value
                 : _scaleAnimation.value,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    _timerColor.withOpacity(0.15),
-                    _timerColor.withOpacity(0.1),
-                  ],
-                ),
-                border: Border.all(
-                  color: _timerColor.withOpacity(0.4),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _timerColor.withOpacity(
-                      widget.isWarning || widget.isCritical 
-                          ? 0.3 * _glowAnimation.value 
-                          : 0.15
-                    ),
-                    blurRadius: widget.isWarning || widget.isCritical 
-                        ? 12 * _glowAnimation.value 
-                        : 6,
-                    spreadRadius: widget.isWarning || widget.isCritical 
-                        ? 2 * _glowAnimation.value 
-                        : 1,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedBuilder(
-                    animation: _slideAnimation,
-                    builder: (context, child) {
-                      return SlideTransition(
-                        position: _slideAnimation,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              widget.isPaused 
-                                  ? Icons.pause_circle_filled
-                                  : widget.isCritical 
-                                      ? Icons.warning
-                                      : Icons.timer,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedBuilder(
+                  animation: _slideAnimation,
+                  builder: (context, child) {
+                    return SlideTransition(
+                      position: _slideAnimation,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.isPaused 
+                                ? Icons.pause_circle_filled
+                                : widget.isCritical 
+                                    ? Icons.warning
+                                    : Icons.timer,
+                            color: _timerColor,
+                            size: 20,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.timeText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                               color: _timerColor,
-                              size: 18,
+                              fontFamily: 'monospace',
+                              letterSpacing: 1.0,
                             ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8, 
-                                vertical: 2
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: _timerColor.withOpacity(0.1),
-                                border: Border.all(
-                                  color: _timerColor.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                widget.timeText,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: _timerColor,
-                                  fontFamily: 'monospace',
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           );
         },
@@ -282,54 +230,25 @@ class ZenModeIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            primaryColor.withOpacity(0.1),
-            secondaryColor.withOpacity(0.1),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.self_improvement,
+          color: primaryColor,
+          size: 20,
         ),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.self_improvement,
+        const SizedBox(height: 6),
+        Text(
+          'ZEN',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
             color: primaryColor,
-            size: 18,
+            letterSpacing: 1.2,
           ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: primaryColor.withOpacity(0.1),
-              border: Border.all(
-                color: primaryColor.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              'ZEN',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 } 
