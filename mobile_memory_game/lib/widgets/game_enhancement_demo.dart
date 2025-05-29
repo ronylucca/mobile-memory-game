@@ -230,9 +230,11 @@ class _GameEnhancementDemoState extends State<GameEnhancementDemo> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Colors.grey[100],
-        border: Border.left(
-          width: 4,
-          color: _getAchievementColor(achievement.rarity),
+        border: Border(
+          left: BorderSide(
+            width: 4,
+            color: _getAchievementColor(achievement.rarity),
+          ),
         ),
       ),
       child: Row(

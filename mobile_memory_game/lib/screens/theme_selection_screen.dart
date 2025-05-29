@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
 import 'package:mobile_memory_game/screens/player_setup_screen.dart';
 import 'package:mobile_memory_game/utils/audio_manager.dart';
+import 'package:mobile_memory_game/widgets/game_enhancement_demo.dart';
 
 class ThemeSelectionScreen extends StatelessWidget {
   const ThemeSelectionScreen({super.key});
@@ -52,6 +53,23 @@ class ThemeSelectionScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 30),
+                
+                // Botão especial - Demo
+                Center(
+                  child: SizedBox(
+                    width: 200,
+                    child: _buildSpecialButton(
+                      context,
+                      'Modo Demo',
+                      Icons.play_circle_outline,
+                      Colors.orange,
+                      () => _showDemo(context),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
                 Expanded(
                   child: GridView.builder(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -157,6 +175,69 @@ class ThemeSelectionScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSpecialButton(
+    BuildContext context,
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color,
+                color.withOpacity(0.7),
+              ],
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDemo(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const GameEnhancementDemo(),
       ),
     );
   }

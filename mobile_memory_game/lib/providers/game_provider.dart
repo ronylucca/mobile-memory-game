@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +7,7 @@ import 'package:mobile_memory_game/models/card_model.dart';
 import 'package:mobile_memory_game/models/game_model.dart';
 import 'package:mobile_memory_game/models/player_model.dart';
 import 'package:mobile_memory_game/models/theme_model.dart';
+import 'package:mobile_memory_game/screens/ai_game_setup_screen.dart'; // Para AIDifficulty
 import 'package:mobile_memory_game/utils/audio_manager.dart';
 
 class GameProvider extends ChangeNotifier {
@@ -22,6 +22,12 @@ class GameProvider extends ChangeNotifier {
   
   // Timer fields
   Timer? _gameTimer;
+  
+  // IA fields
+  bool _isAIEnabled = false;
+  AIDifficulty? _aiDifficulty;
+  Timer? _aiThinkingTimer;
+  String? _originalPlayer2Name; // Armazena o nome original do player 2
   
   GameModel get game {
     if (_game == null) {
@@ -41,12 +47,18 @@ class GameProvider extends ChangeNotifier {
     required ThemeModel theme,
     GameMode gameMode = GameMode.zen,
     int? timerMinutes,
+    bool isAIEnabled = false,
+    AIDifficulty? aiDifficulty,
   }) async {
     debugPrint('Inicializando jogo com tema: ${theme.id}');
     
+    _isAIEnabled = isAIEnabled;
+    _aiDifficulty = aiDifficulty;
+    _originalPlayer2Name = player2Name;
+    
     final players = [
       PlayerModel(id: 1, name: player1Name, isCurrentTurn: true),
-      PlayerModel(id: 2, name: player2Name),
+      PlayerModel(id: 2, name: isAIEnabled ? 'IA ${_getAIDifficultyName()}' : player2Name),
     ];
 
     // Realiza o "cara ou coroa" virtual para decidir quem começa
@@ -103,6 +115,13 @@ class GameProvider extends ChangeNotifier {
     _audioManager.playThemeSound('game_start');
     
     notifyListeners();
+    
+    // Se a IA começa jogando, ativa ela após um breve atraso
+    if (_isAIEnabled && starterIndex == 1) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        _makeAIMove();
+      });
+    }
   }
   
   // Gera cores distintas para cada jogador baseadas no tema
@@ -202,6 +221,12 @@ class GameProvider extends ChangeNotifier {
     // Lógica para verificar pares
     if (_firstSelectedCard == null) {
       _firstSelectedCard = updatedCards[index];
+      // Se é a IA fazendo a primeira jogada, programa a segunda automaticamente
+      if (_isAIEnabled && _game!.currentPlayerIndex == 1) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          _makeAIMove();
+        });
+      }
     } else {
       _isProcessingTurn = true;
       _secondSelectedCard = updatedCards[index];
@@ -276,6 +301,13 @@ class GameProvider extends ChangeNotifier {
       // Verifica se o jogo acabou
       if (updatedCards.every((card) => card.isMatched)) {
         _endGame();
+      } else {
+        // Se acertou e é IA, ela joga novamente (mesma regra do jogador humano)
+        if (_isAIEnabled && _game!.currentPlayerIndex == 1 && !_game!.isGameCompleted) {
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            _makeAIMove();
+          });
+        }
       }
     } else {
       // As cartas não formam um par, virar de volta
@@ -310,6 +342,13 @@ class GameProvider extends ChangeNotifier {
     _isProcessingTurn = false;
     
     notifyListeners();
+    
+    // Se é o turno da IA e ela errou (mudou de jogador), ativa ela
+    if (_isAIEnabled && _game!.currentPlayerIndex == 1 && !_game!.isGameCompleted) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        _makeAIMove();
+      });
+    }
   }
 
   // Finaliza o jogo
@@ -356,10 +395,12 @@ class GameProvider extends ChangeNotifier {
   void restartGame() {
     initializeGame(
       player1Name: _game!.players[0].name,
-      player2Name: _game!.players[1].name,
+      player2Name: _originalPlayer2Name ?? _game!.players[1].name,
       theme: _game!.theme,
       gameMode: _game!.gameMode,
       timerMinutes: _game!.timerDurationMinutes,
+      isAIEnabled: _isAIEnabled,
+      aiDifficulty: _aiDifficulty,
     );
   }
 
@@ -431,6 +472,112 @@ class GameProvider extends ChangeNotifier {
   @override
   void dispose() {
     _stopTimer();
+    _aiThinkingTimer?.cancel();
     super.dispose();
+  }
+  
+  // Métodos de suporte à IA
+  String _getAIDifficultyName() {
+    switch (_aiDifficulty) {
+      case AIDifficulty.easy:
+        return 'Fácil';
+      case AIDifficulty.moderate:
+        return 'Moderado';
+      case AIDifficulty.hard:
+        return 'Difícil';
+      case null:
+        return 'Moderado';
+    }
+  }
+  
+  // Simula a jogada da IA
+  void _makeAIMove() {
+    if (!_isAIEnabled || _game!.currentPlayerIndex != 1 || _isProcessingTurn) return;
+    
+    final random = Random();
+    final difficulty = _aiDifficulty ?? AIDifficulty.moderate;
+    
+    // Calcula chance de sucesso baseada na dificuldade
+    double successRate;
+    int minThinkTime, maxThinkTime;
+    
+    switch (difficulty) {
+      case AIDifficulty.easy:
+        successRate = 0.20;  // 35% mais fácil que o antigo fácil (30% - 35% = ~20%)
+        minThinkTime = 300;  // Mais rápido para primeira carta
+        maxThinkTime = 800;
+        break;
+      case AIDifficulty.moderate:
+        successRate = 0.30;  // Dificuldade que antes era fácil
+        minThinkTime = 500;
+        maxThinkTime = 1200;
+        break;
+      case AIDifficulty.hard:
+        successRate = 0.45;  // Dificuldade que antes era moderado (60%) menos 25%
+        minThinkTime = 800;
+        maxThinkTime = 1500;
+        break;
+    }
+    
+    // Se é a primeira carta do turno da IA, usa tempo menor
+    int thinkTime;
+    if (_firstSelectedCard == null) {
+      // Primeira carta: tempo mais curto
+      thinkTime = (minThinkTime * 0.5).round() + random.nextInt((maxThinkTime * 0.5).round());
+    } else {
+      // Segunda carta: tempo normal
+      thinkTime = minThinkTime + random.nextInt(maxThinkTime - minThinkTime);
+    }
+    
+    _aiThinkingTimer = Timer(Duration(milliseconds: thinkTime), () {
+      final availableCards = <int>[];
+      
+      // Encontra cartas disponíveis (não viradas e não combinadas)
+      for (int i = 0; i < _game!.cards.length; i++) {
+        final card = _game!.cards[i];
+        if (!card.isFlipped && !card.isMatched) {
+          availableCards.add(i);
+        }
+      }
+      
+      if (availableCards.isEmpty) return;
+      
+      int selectedIndex;
+      
+      if (_firstSelectedCard == null) {
+        // Primeira carta: sempre aleatória
+        selectedIndex = availableCards[random.nextInt(availableCards.length)];
+      } else {
+        // Segunda carta: decide se faz jogada inteligente baseado na dificuldade
+        bool makeSmartMove = random.nextDouble() < successRate;
+        
+        if (makeSmartMove) {
+          // Tenta encontrar o par da primeira carta
+          final matchingCards = availableCards.where((index) {
+            return _game!.cards[index].pairId == _firstSelectedCard!.pairId;
+          }).toList();
+          
+          if (matchingCards.isNotEmpty) {
+            selectedIndex = matchingCards.first;
+          } else {
+            selectedIndex = availableCards[random.nextInt(availableCards.length)];
+          }
+        } else {
+          // Jogada aleatória (IA erra intencionalmente)
+          final nonMatchingCards = availableCards.where((index) {
+            return _game!.cards[index].pairId != _firstSelectedCard!.pairId;
+          }).toList();
+          
+          if (nonMatchingCards.isNotEmpty) {
+            selectedIndex = nonMatchingCards[random.nextInt(nonMatchingCards.length)];
+          } else {
+            selectedIndex = availableCards[random.nextInt(availableCards.length)];
+          }
+        }
+      }
+      
+      // Executa a jogada
+      selectCard(selectedIndex);
+    });
   }
 } 

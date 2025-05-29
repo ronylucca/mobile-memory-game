@@ -5,15 +5,11 @@ import 'package:mobile_memory_game/models/theme_model.dart';
 import 'package:mobile_memory_game/models/game_model.dart';
 import 'package:mobile_memory_game/providers/game_provider.dart';
 import 'package:mobile_memory_game/screens/game_result_screen.dart';
-import 'package:mobile_memory_game/widgets/memory_card.dart';
-import 'package:mobile_memory_game/widgets/score_board.dart';
-import 'package:mobile_memory_game/widgets/enhanced_score_board.dart';
-import 'package:mobile_memory_game/widgets/enhanced_game_controls.dart';
-import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
-import 'package:mobile_memory_game/widgets/particle_system.dart';
-import 'package:mobile_memory_game/utils/game_utils.dart';
+import 'package:mobile_memory_game/screens/ai_game_setup_screen.dart';
 import 'package:mobile_memory_game/utils/responsive_layout.dart';
 import 'package:mobile_memory_game/widgets/enhanced_score_board_with_combo.dart';
+import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
+import 'package:mobile_memory_game/widgets/particle_system.dart';
 
 class GameScreen extends StatefulWidget {
   final String player1Name;
@@ -21,6 +17,8 @@ class GameScreen extends StatefulWidget {
   final ThemeModel theme;
   final GameMode gameMode;
   final int? timerMinutes;
+  final bool isAIEnabled;
+  final AIDifficulty? aiDifficulty;
 
   const GameScreen({
     super.key,
@@ -29,6 +27,8 @@ class GameScreen extends StatefulWidget {
     required this.theme,
     this.gameMode = GameMode.zen,
     this.timerMinutes,
+    this.isAIEnabled = false,
+    this.aiDifficulty,
   });
 
   @override
@@ -56,6 +56,8 @@ class _GameScreenState extends State<GameScreen> {
         theme: widget.theme,
         gameMode: widget.gameMode,
         timerMinutes: widget.timerMinutes,
+        isAIEnabled: widget.isAIEnabled,
+        aiDifficulty: widget.aiDifficulty,
       );
       if (mounted) {
         setState(() {
@@ -205,13 +207,6 @@ class _GameScreenState extends State<GameScreen> {
                                   theme: widget.theme,
                                   onCardTap: (index) => gameProvider.selectCard(index),
                                 ),
-                              ),
-                              SizedBox(height: isLargeScreen ? 20 : 12),
-                              EnhancedGameControls(
-                                gameProvider: gameProvider,
-                                theme: widget.theme,
-                                isCompact: !isLargeScreen,
-                                onRestart: () => _showRestartConfirmationDialog(gameProvider),
                               ),
                             ],
                           );
