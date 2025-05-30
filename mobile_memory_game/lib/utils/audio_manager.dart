@@ -184,6 +184,9 @@ class AudioManager {
       case 'game_end':
         soundPath = soundGameEnd;
         break;
+      case 'powerup':
+        soundPath = 'audio/powerup.mp3'; // Som especial para powerups
+        break;
       default:
         debugPrint('Tipo de som $soundKey não reconhecido!');
         return; // Sai se não encontrou um som correspondente
@@ -309,5 +312,10 @@ class AudioManager {
     if (_isDebugMode) return;
     
     _audioPlayer.dispose();
+  }
+
+  // Toca som específico de powerup
+  Future<void> playPowerupSound() async {
+    await playThemeSound('powerup');
   }
 } 

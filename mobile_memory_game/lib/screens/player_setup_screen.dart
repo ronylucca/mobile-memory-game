@@ -23,6 +23,14 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final AudioManager _audioManager = AudioManager();
   
+  // FocusNodes para controle de foco dos campos
+  final FocusNode _player1FocusNode = FocusNode();
+  final FocusNode _player2FocusNode = FocusNode();
+  
+  // Textos padrão para restaurar se necessário
+  final String _defaultPlayer1Text = 'Jogador 1';
+  final String _defaultPlayer2Text = 'Jogador 2';
+  
   // Campos para o timer
   GameMode _selectedGameMode = GameMode.zen;
   int _selectedMinutes = 5;
@@ -31,11 +39,50 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
   // Campos para IA
   bool _isAIEnabled = false;
   AIDifficulty _selectedAIDifficulty = AIDifficulty.moderate;
+  
+  // Configuração de powerups (padrão desabilitado)
+  bool _powerupsEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Adiciona listeners para os FocusNodes
+    _player1FocusNode.addListener(() {
+      if (_player1FocusNode.hasFocus) {
+        // Quando ganha foco, limpa se for texto padrão
+        if (_player1Controller.text == _defaultPlayer1Text) {
+          _player1Controller.clear();
+        }
+      } else {
+        // Quando perde foco, restaura texto padrão se estiver vazio
+        if (_player1Controller.text.trim().isEmpty) {
+          _player1Controller.text = _defaultPlayer1Text;
+        }
+      }
+    });
+    
+    _player2FocusNode.addListener(() {
+      if (_player2FocusNode.hasFocus) {
+        // Quando ganha foco, limpa se for texto padrão
+        if (_player2Controller.text == _defaultPlayer2Text) {
+          _player2Controller.clear();
+        }
+      } else {
+        // Quando perde foco, restaura texto padrão se estiver vazio
+        if (_player2Controller.text.trim().isEmpty) {
+          _player2Controller.text = _defaultPlayer2Text;
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
     _player1Controller.dispose();
     _player2Controller.dispose();
+    _player1FocusNode.dispose();
+    _player2FocusNode.dispose();
     super.dispose();
   }
 
@@ -179,6 +226,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           label: 'Jogador 1',
           icon: Icons.person,
           color: widget.selectedTheme.primaryColor,
+          focusNode: _player1FocusNode,
         ),
         const SizedBox(height: 20),
         
@@ -222,6 +270,10 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           const SizedBox(height: 20),
           _buildTimerSelector(),
         ],
+        
+        // Toggle de powerups
+        const SizedBox(height: 30),
+        _buildPowerupsToggle(),
       ],
     );
   }
@@ -245,6 +297,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           label: 'Jogador 1',
           icon: Icons.person,
           color: widget.selectedTheme.primaryColor,
+          focusNode: _player1FocusNode,
         ),
         const SizedBox(height: 15),
         
@@ -287,6 +340,10 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
           const SizedBox(height: 15),
           _buildCompactTimerSelector(),
         ],
+        
+        // Toggle de powerups compacto
+        const SizedBox(height: 25),
+        _buildCompactPowerupsToggle(),
       ],
     );
   }
@@ -296,11 +353,13 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
     required String label,
     required IconData icon,
     required Color color,
+    FocusNode? focusNode,
   }) {
     final readableColor = _getReadableBackgroundColor(color);
     
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: readableColor),
@@ -319,7 +378,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
         ),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if (value == null || value.trim().isEmpty) {
           return 'Por favor, insira o nome do jogador';
         }
         return null;
@@ -505,13 +564,15 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => GameScreen(
-            player1Name: _player1Controller.text,
-            player2Name: _isAIEnabled ? 'IA' : _player2Controller.text,
+            playerNames: [
+              _player1Controller.text,
+              _isAIEnabled ? 'IA' : _player2Controller.text,
+            ],
             theme: widget.selectedTheme,
             gameMode: _selectedGameMode,
-            timerMinutes: _selectedGameMode == GameMode.timer ? _selectedMinutes : null,
-            isAIEnabled: _isAIEnabled,
+            gameDuration: _selectedGameMode == GameMode.timer ? _selectedMinutes : null,
             aiDifficulty: _isAIEnabled ? _selectedAIDifficulty : null,
+            powerupsEnabled: _powerupsEnabled,
           ),
         ),
       );
@@ -726,6 +787,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
               label: 'Nome do Jogador 2',
               icon: Icons.person,
               color: widget.selectedTheme.secondaryColor,
+              focusNode: _player2FocusNode,
             )
           else
             _buildAIDifficultySelection(),
@@ -896,6 +958,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
               label: 'Nome do Jogador 2',
               icon: Icons.person,
               color: widget.selectedTheme.secondaryColor,
+              focusNode: _player2FocusNode,
             )
           else
             _buildCompactAIDifficultySelection(),
@@ -1035,6 +1098,241 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPowerupsToggle() {
+    final readableColor = _getReadableBackgroundColor(widget.selectedTheme.primaryColor);
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            widget.selectedTheme.primaryColor.withOpacity(0.1),
+            widget.selectedTheme.secondaryColor.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: _powerupsEnabled ? Colors.green.withOpacity(0.5) : readableColor.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (_powerupsEnabled ? Colors.green : readableColor).withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Ícone de powerup
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: _powerupsEnabled ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                ),
+                child: Icon(
+                  Icons.bolt,
+                  color: _powerupsEnabled ? Colors.green : Colors.grey,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Texto principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Powerups',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: readableColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _powerupsEnabled ? 'Habilitados no jogo' : 'Desabilitados',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: readableColor.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Toggle switch
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _powerupsEnabled = !_powerupsEnabled;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 60,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: _powerupsEnabled ? Colors.green : Colors.grey.shade400,
+                  ),
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    alignment: _powerupsEnabled ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      margin: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: Icon(
+                        _powerupsEnabled ? Icons.check : Icons.close,
+                        size: 16,
+                        color: _powerupsEnabled ? Colors.green : Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // Descrição dos powerups
+          if (_powerupsEnabled) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.green.withOpacity(0.1),
+              ),
+              child: Text(
+                'Inclui: Raio-X (revela todas), Dica (destaca 3 cartas), Congelar Tempo, Pontos Duplos, Trocar Turno, Boost de Memória, Palpite da Sorte e Memory Boost',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: readableColor.withOpacity(0.8),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactPowerupsToggle() {
+    final readableColor = _getReadableBackgroundColor(widget.selectedTheme.primaryColor);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            widget.selectedTheme.primaryColor.withOpacity(0.1),
+            widget.selectedTheme.secondaryColor.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: _powerupsEnabled ? Colors.green.withOpacity(0.5) : readableColor.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Ícone de powerup
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              color: _powerupsEnabled ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+            ),
+            child: Icon(
+              Icons.bolt,
+              color: _powerupsEnabled ? Colors.green : Colors.grey,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Texto
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Powerups',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: readableColor,
+                  ),
+                ),
+                Text(
+                  _powerupsEnabled ? 'Habilitados' : 'Desabilitados',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: readableColor.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Toggle switch compacto
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _powerupsEnabled = !_powerupsEnabled;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 50,
+              height: 26,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(13),
+                color: _powerupsEnabled ? Colors.green : Colors.grey.shade400,
+              ),
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 200),
+                alignment: _powerupsEnabled ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  margin: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  child: Icon(
+                    _powerupsEnabled ? Icons.check : Icons.close,
+                    size: 14,
+                    color: _powerupsEnabled ? Colors.green : Colors.grey,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

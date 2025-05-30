@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 enum PowerUpType {
-  hint,      // Mostra brevemente 2 cartas que fazem par
-  freeze,    // Pausa o timer por alguns segundos  
+  hint,         // Mostra brevemente 2 cartas que fazem par
+  freeze,       // Pausa o timer por alguns segundos  
   doublePoints, // Próximo acerto vale pontos duplos
-  xray,      // Mostra todas as cartas por 1 segundo
-  shuffle,   // Embaralha as cartas
-  lightning, // Remove automaticamente um par
+  xray,         // Mostra todas as cartas por 1 segundo
+  shuffle,      // Embaralha as cartas
+  lightning,    // Remove automaticamente um par
+  swapTurn,     // Não perde turno no próximo erro
+  upsideDown,   // Cartas do adversário ficam de cabeça para baixo
+  allYourMud,   // Remove debuffs próprios e aplica efeito "molhado" no adversário
 }
 
 class PowerUp {
@@ -16,7 +19,8 @@ class PowerUp {
   final String description;
   final String icon;
   final Duration duration;
-  final int cost; // Custo em pontos ou moedas
+  final int cost; // Custo em pontos
+  final bool isPermanent; // Se o efeito é permanente até usado
 
   const PowerUp({
     required this.type,
@@ -25,42 +29,131 @@ class PowerUp {
     required this.icon,
     required this.duration,
     required this.cost,
+    this.isPermanent = false,
   });
 
   static const List<PowerUp> availablePowerUps = [
     PowerUp(
       type: PowerUpType.hint,
       name: 'Dica',
-      description: 'Revela um par por 2 segundos',
+      description: 'Destaca 3 cartas (1 par + 1 extra) por 3 segundos',
       icon: '💡',
-      duration: Duration(seconds: 2),
-      cost: 50,
+      duration: Duration(seconds: 3),
+      cost: 3,
     ),
     PowerUp(
       type: PowerUpType.freeze,
       name: 'Congelar',
-      description: 'Pausa o timer por 5 segundos',
+      description: 'Pausa o timer por 30 segundos',
       icon: '❄️',
-      duration: Duration(seconds: 5),
-      cost: 75,
+      duration: Duration(seconds: 30),
+      cost: 5,
     ),
     PowerUp(
       type: PowerUpType.doublePoints,
       name: 'Pontos Duplos',
-      description: 'Próximo acerto vale 2x pontos',
+      description: 'Próximos 3 pares valem pontos em dobro',
       icon: '⭐',
       duration: Duration(seconds: 30),
-      cost: 100,
+      cost: 2,
+      isPermanent: true, // Ativo até usar 3 pares
     ),
     PowerUp(
       type: PowerUpType.xray,
       name: 'Raio-X',
-      description: 'Mostra todas as cartas por 1 segundo',
+      description: 'Mostra todas as cartas por 3 segundos',
       icon: '👁️',
+      duration: Duration(seconds: 3),
+      cost: 5,
+    ),
+    PowerUp(
+      type: PowerUpType.shuffle,
+      name: 'Embaralhar',
+      description: 'Reposiciona cartas não emparelhadas',
+      icon: '🔀',
+      duration: Duration(milliseconds: 800),
+      cost: 4,
+    ),
+    PowerUp(
+      type: PowerUpType.lightning,
+      name: 'Raio',
+      description: '50% chance de acertar par automaticamente',
+      icon: '⚡',
+      duration: Duration(milliseconds: 1500),
+      cost: 8,
+    ),
+    PowerUp(
+      type: PowerUpType.swapTurn,
+      name: 'Trocar Turno',
+      description: 'Joga novamente mesmo errando',
+      icon: '🔄',
       duration: Duration(seconds: 1),
-      cost: 150,
+      cost: 4,
+      isPermanent: true, // Ativo até o próximo erro
+    ),
+    PowerUp(
+      type: PowerUpType.upsideDown,
+      name: 'De Cabeça p/ Baixo',
+      description: 'Adversário vê cartas invertidas na próxima jogada',
+      icon: '🙃',
+      duration: Duration(seconds: 1), // Até a próxima jogada
+      cost: 7,
+      isPermanent: true,
+    ),
+    PowerUp(
+      type: PowerUpType.allYourMud,
+      name: 'Banho de Lama',
+      description: 'Remove seus debuffs e embarralha visão do adversário',
+      icon: '🌊',
+      duration: Duration(seconds: 1), // Até a próxima jogada  
+      cost: 8,
+      isPermanent: true,
     ),
   ];
+
+  // Método estático para obter powerup por tipo
+  static PowerUp getPowerUp(PowerUpType type) {
+    return availablePowerUps.firstWhere((powerup) => powerup.type == type);
+  }
+}
+
+// Estado de um powerup ativo para um jogador
+class ActivePowerUp {
+  final PowerUpType type;
+  final DateTime activatedAt;
+  final Duration duration;
+  final bool isPermanent;
+  final Map<String, dynamic> state; // Estado específico do powerup
+
+  ActivePowerUp({
+    required this.type,
+    required this.activatedAt,
+    required this.duration,
+    this.isPermanent = false,
+    this.state = const {},
+  });
+
+  bool get isExpired {
+    if (isPermanent) return false; // Powerups permanentes não expiram por tempo
+    return DateTime.now().difference(activatedAt) >= duration;
+  }
+
+  int get remainingTime {
+    if (isPermanent) return duration.inSeconds; // Mostra duração original
+    final elapsed = DateTime.now().difference(activatedAt).inSeconds;
+    return (duration.inSeconds - elapsed).clamp(0, duration.inSeconds);
+  }
+
+  // Atualiza estado específico do powerup
+  ActivePowerUp updateState(Map<String, dynamic> newState) {
+    return ActivePowerUp(
+      type: type,
+      activatedAt: activatedAt,
+      duration: duration,
+      isPermanent: isPermanent,
+      state: {...state, ...newState},
+    );
+  }
 }
 
 class PowerUpButton extends StatefulWidget {
@@ -158,6 +251,12 @@ class _PowerUpButtonState extends State<PowerUpButton>
         return Colors.orange;
       case PowerUpType.lightning:
         return Colors.yellow;
+      case PowerUpType.swapTurn:
+        return Colors.blue;
+      case PowerUpType.upsideDown:
+        return Colors.red;
+      case PowerUpType.allYourMud:
+        return Colors.brown;
     }
   }
 
@@ -351,6 +450,12 @@ class _PowerUpEffectOverlayState extends State<PowerUpEffectOverlay>
         return const Duration(milliseconds: 800);
       case PowerUpType.lightning:
         return const Duration(milliseconds: 1500);
+      case PowerUpType.swapTurn:
+        return const Duration(milliseconds: 800);
+      case PowerUpType.upsideDown:
+        return const Duration(milliseconds: 1000);
+      case PowerUpType.allYourMud:
+        return const Duration(milliseconds: 1000);
     }
   }
 
@@ -380,6 +485,10 @@ class _PowerUpEffectOverlayState extends State<PowerUpEffectOverlay>
         return _buildXRayEffect();
       case PowerUpType.lightning:
         return _buildLightningEffect();
+      case PowerUpType.upsideDown:
+        return _buildUpsideDownEffect();
+      case PowerUpType.allYourMud:
+        return _buildMudEffect();
       default:
         return const SizedBox.shrink();
     }
@@ -465,6 +574,77 @@ class _PowerUpEffectOverlayState extends State<PowerUpEffectOverlay>
     return CustomPaint(
       painter: LightningPainter(progress: _animation.value),
       child: Container(),
+    );
+  }
+
+  Widget _buildUpsideDownEffect() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: _animation.value,
+          colors: [
+            Colors.red.withOpacity(0.8 * _animation.value),
+            Colors.orange.withOpacity(0.4 * _animation.value),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Transform.rotate(
+          angle: _animation.value * 3.14159, // 180° rotation
+          child: Transform.scale(
+            scale: _animation.value,
+            child: const Text(
+              '🙃',
+              style: TextStyle(
+                fontSize: 80,
+                shadows: [
+                  Shadow(
+                    color: Colors.black,
+                    offset: Offset(2, 2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMudEffect() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: _animation.value,
+          colors: [
+            Colors.brown.withOpacity(0.8 * _animation.value),
+            Colors.blue.withOpacity(0.4 * _animation.value),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Transform.scale(
+          scale: _animation.value,
+          child: const Text(
+            '🌊',
+            style: TextStyle(
+              fontSize: 80,
+              shadows: [
+                Shadow(
+                  color: Colors.black,
+                  offset: Offset(2, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

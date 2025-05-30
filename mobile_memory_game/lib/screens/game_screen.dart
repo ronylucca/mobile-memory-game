@@ -11,25 +11,27 @@ import 'package:mobile_memory_game/widgets/enhanced_score_board_with_combo.dart'
 import 'package:mobile_memory_game/widgets/responsive_game_board.dart';
 import 'package:mobile_memory_game/widgets/particle_system.dart';
 import 'package:mobile_memory_game/widgets/enhanced_game_controls.dart';
+import 'package:mobile_memory_game/widgets/floating_powerups_display.dart';
+import 'package:mobile_memory_game/widgets/floating_powerups_manager.dart';
 
 class GameScreen extends StatefulWidget {
-  final String player1Name;
-  final String player2Name;
   final ThemeModel theme;
+  final List<String> playerNames;
   final GameMode gameMode;
-  final int? timerMinutes;
-  final bool isAIEnabled;
+  final int gridSize;
+  final int? gameDuration;
   final AIDifficulty? aiDifficulty;
+  final bool powerupsEnabled;
 
   const GameScreen({
     super.key,
-    required this.player1Name,
-    required this.player2Name,
     required this.theme,
+    required this.playerNames,
     this.gameMode = GameMode.zen,
-    this.timerMinutes,
-    this.isAIEnabled = false,
+    this.gridSize = 4,
+    this.gameDuration,
     this.aiDifficulty,
+    this.powerupsEnabled = false,
   });
 
   @override
@@ -52,13 +54,14 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _initializeGame() async {
     try {
       await _gameProvider.initializeGame(
-        player1Name: widget.player1Name,
-        player2Name: widget.player2Name,
+        player1Name: widget.playerNames[0],
+        player2Name: widget.playerNames[1],
         theme: widget.theme,
         gameMode: widget.gameMode,
-        timerMinutes: widget.timerMinutes,
-        isAIEnabled: widget.isAIEnabled,
+        timerMinutes: widget.gameDuration,
+        isAIEnabled: widget.aiDifficulty != null,
         aiDifficulty: widget.aiDifficulty,
+        powerupsEnabled: widget.powerupsEnabled,
       );
       if (mounted) {
         setState(() {
@@ -208,6 +211,7 @@ class _GameScreenState extends State<GameScreen> {
                                 onTimerTap: () => gameProvider.toggleTimerPause(),
                               ),
                               SizedBox(height: isLargeScreen ? 20 : 12),
+                              
                               Expanded(
                                 child: ResponsiveGameBoard(
                                   cards: game.cards,
@@ -220,6 +224,16 @@ class _GameScreenState extends State<GameScreen> {
                         },
                       ),
                     ),
+                    
+                    // Sistema de powerups flutuante (apenas se habilitado)
+                    if (widget.powerupsEnabled)
+                      FloatingPowerupsManager(
+                        player1: game.players[0],
+                        player2: game.players[1],
+                        currentPlayerIndex: game.currentPlayerIndex,
+                        onPowerupPressed: (type) => gameProvider.activatePowerup(type),
+                      ),
+                    
                     Align(
                       alignment: Alignment.topCenter,
                       child: ConfettiWidget(

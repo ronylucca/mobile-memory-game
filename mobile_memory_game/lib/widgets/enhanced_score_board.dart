@@ -4,6 +4,9 @@ import 'package:mobile_memory_game/models/theme_model.dart';
 import 'package:mobile_memory_game/models/game_model.dart';
 import 'package:mobile_memory_game/widgets/floating_combo_display.dart';
 import 'package:mobile_memory_game/widgets/animated_timer.dart';
+import 'package:mobile_memory_game/widgets/power_up_effects.dart';
+import 'package:provider/provider.dart';
+import 'package:mobile_memory_game/providers/game_provider.dart';
 
 class EnhancedScoreBoard extends StatefulWidget {
   final List<PlayerModel> players;
@@ -336,30 +339,39 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             child: Column(
               children: [
-                // Nome do jogador com ícone
+                // Nome do jogador com indicador de turno
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: isLeft ? MainAxisAlignment.start : MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      isLeft ? Icons.person : Icons.person_outline,
-                      color: isCurrentPlayer
-                          ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
-                          : Colors.grey[600],
-                      size: widget.isCompact ? 14 : 16,
-                    ),
+                    if (isCurrentPlayer)
+                      Icon(
+                        Icons.play_arrow_rounded,
+                        color: showComboEffect ? comboColor1 : widget.theme.primaryColor,
+                        size: 16,
+                      ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        player.name,
-                        style: TextStyle(
-                          fontSize: nameFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: isCurrentPlayer
-                              ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
-                              : Colors.grey[700],
-                          letterSpacing: 0.5,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              player.name,
+                              style: TextStyle(
+                                fontSize: nameFontSize,
+                                fontWeight: FontWeight.bold,
+                                color: isCurrentPlayer
+                                    ? (showComboEffect ? comboColor1 : widget.theme.primaryColor)
+                                    : Colors.grey[700],
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Indicador de debuff
+                          _buildDebuffIndicator(player),
+                        ],
                       ),
                     ),
                   ],
@@ -508,6 +520,50 @@ class _EnhancedScoreBoardState extends State<EnhancedScoreBoard>
       return Colors.red.shade500;
     } else {
       return widget.theme.secondaryColor;
+    }
+  }
+
+  Widget _buildDebuffIndicator(PlayerModel player) {
+    final gameProvider = context.watch<GameProvider>();
+    final game = gameProvider.game;
+    
+    // Encontra o índice do jogador
+    final playerIndex = widget.players.indexOf(player);
+    if (playerIndex == -1) return const SizedBox.shrink();
+    
+    // Verifica qual debuff está ativo no jogador
+    final activeDebuff = game.getActiveDebuffForPlayer(playerIndex);
+    
+    if (activeDebuff == null) return const SizedBox.shrink();
+    
+    final powerup = PowerUp.getPowerUp(activeDebuff);
+    
+    return Container(
+      margin: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: _getDebuffColor(activeDebuff).withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _getDebuffColor(activeDebuff),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        powerup.icon,
+        style: const TextStyle(fontSize: 12),
+      ),
+    );
+  }
+
+  Color _getDebuffColor(PowerUpType debuffType) {
+    switch (debuffType) {
+      case PowerUpType.upsideDown:
+        return Colors.red;
+      case PowerUpType.allYourMud:
+        return Colors.brown;
+      default:
+        return Colors.grey;
     }
   }
 } 
