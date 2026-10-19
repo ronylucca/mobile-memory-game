@@ -246,8 +246,8 @@ class ThemeSelectionScreen extends StatelessWidget {
     switch (themeId) {
       case 'bob_esponja':
         return Icons.sports_motorsports;
-      case 'peppa_pig':
-        return Icons.emoji_nature;
+      case 'donkey_kong_bananza':
+        return Icons.forest;
       case 'nemo':
         return Icons.water;
       case 'supergatinhos':

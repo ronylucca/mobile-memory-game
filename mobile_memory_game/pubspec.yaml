@@ -66,7 +66,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/bob_esponja/
-    - assets/images/peppa_pig/
+    - assets/images/donkey_kong_bananza/
     - assets/images/nemo/
     - assets/images/supergatinhos/
     - assets/images/astro_bot/
@@ -75,7 +75,7 @@ flutter:
     - assets/audio/
     # Pastas de sons específicas por tema
     - assets/images/bob_esponja/sounds/
-    - assets/images/peppa_pig/sounds/
+    - assets/images/donkey_kong_bananza/sounds/
     - assets/images/nemo/sounds/
     - assets/images/supergatinhos/sounds/
     - assets/images/astro_bot/sounds/

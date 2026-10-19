@@ -160,6 +160,7 @@ class _PlayerSetupScreenState extends State<PlayerSetupScreen> {
                     key: _formKey,
                     child: Card(
                       elevation: 8,
+                      color: Colors.white.withOpacity(0.75),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

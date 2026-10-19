@@ -139,9 +139,19 @@ class AudioManager {
     // Verifica se temos um tema definido e se ele tem o som específico
     if (_currentTheme != null && _currentTheme!.themeSounds.containsKey(soundKey)) {
       soundPath = _currentTheme!.themeSounds[soundKey]!;
-      
-      // Verifica se o arquivo existe
-      final exists = await _doesAssetExist(soundPath);
+
+      // Verifica se o arquivo existe (aceita .mp3 ou .m4a, independente da extensão declarada)
+      var exists = await _doesAssetExist(soundPath);
+      if (!exists) {
+        final base = soundPath.replaceAll(RegExp(r'\.(mp3|m4a)$'), '');
+        for (final ext in ['.mp3', '.m4a']) {
+          if (await _doesAssetExist('$base$ext')) {
+            soundPath = '$base$ext';
+            exists = true;
+            break;
+          }
+        }
+      }
       if (exists) {
         debugPrint('Usando som do tema ${_currentTheme!.id}: $soundPath');
         
